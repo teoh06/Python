@@ -38,12 +38,10 @@ MODES = {
     "POMODORO": "Pomodoro", "SHORT_BREAK": "Short Break",
     "LONG_BREAK": "Long Break", "STOPWATCH": "Stopwatch"
 }
-
 DEFAULT_SETTINGS = {
     "pomodoro_duration": 25 * 60, "short_break_duration": 5 * 60, "long_break_duration": 15 * 60,
     "long_break_interval": 4, "sound_file_path": "", "theme": "dark"
 }
-
 PRIORITIES = ["High", "Medium", "Low"]
 
 MOTIVATIONAL_QUOTES = [
@@ -162,9 +160,9 @@ class DailyGoalDialog(CustomDialog):
     def _on_save(self): self.result = self.goal_entry.get().strip(); self.destroy()
 
 # --- 5. Main Application ---
-class PomodoroTimer(tk.Tk):
-    def __init__(self):
-        super().__init__()
+class PomodoroTimer(tk.Toplevel):
+    def __init__(self, master=None):
+        super().__init__(master)
         if SOUND_MODULE:
             try:
                 pygame.mixer.init()
@@ -210,7 +208,7 @@ class PomodoroTimer(tk.Tk):
         self.quote_label = self._create_label("Let's get started!", font=(FONT_FAMILY, 11, "italic"), wraplength=480, pady=(0, 10))
         self._create_control_buttons()
         self._create_task_manager()
-        self._apply_theme()
+        self._apply_theme(animated=False) # Apply initial theme without animation
         self._load_tasks_to_listbox()
 
     def _create_label(self, text, parent=None, **kwargs):
@@ -229,7 +227,7 @@ class PomodoroTimer(tk.Tk):
         self.settings_menu.add_command(label="Configure Timers", command=self.open_settings_window)
         self.settings_menu.add_separator()
         self.settings_menu.add_command(label="Reset Defaults", command=self.reset_settings)
-        self.menubar.add_command(label="☀️ Light /🌙 Dark", command=self.toggle_theme)
+        self.menubar.add_command(label="☀️/🌙", command=self.toggle_theme)
 
     def _create_mode_buttons(self):
         self.mode_frame = tk.Frame(self.main_frame); self.mode_frame.pack(pady=10); self.all_widgets.append(self.mode_frame)
@@ -284,34 +282,47 @@ class PomodoroTimer(tk.Tk):
         self.theme_name = "light" if self.theme_name == "dark" else "dark"
         self.theme = THEMES[self.theme_name]
         self.settings['theme'] = self.theme_name
-        self._apply_theme()
+        self._apply_theme(animated=True)
 
-    def _apply_theme(self):
+    def _apply_theme(self, animated=False, widget_index=0):
+        if not animated: # Apply instantly
+            for widget in self.all_widgets: self._configure_widget_theme(widget)
+            self._configure_special_widgets()
+            self._recolor_tasks()
+            return
+
+        if widget_index < len(self.all_widgets): # Animate recursively
+            self._configure_widget_theme(self.all_widgets[widget_index])
+            self.after(15, self._apply_theme, True, widget_index + 1)
+        else: # Animation finished, configure special widgets
+            self._configure_special_widgets()
+            self._recolor_tasks()
+
+    def _configure_widget_theme(self, widget):
+        widget_class = widget.winfo_class()
+        bg, fg = self.theme["BACKGROUND"], self.theme["FOREGROUND"]
+
+        if widget in [self.session_frame, self.session_label]: bg = self.theme["SESSION_BG"]
+        elif widget == self.goal_label: fg = self.theme["ACCENT"]
+        elif widget_class == "Entry":
+            bg = self.theme["BUTTON"]
+            fg = "grey" if widget.get() == "Enter task here..." else self.theme["FOREGROUND"]
+            widget.config(insertbackground=self.theme["FOREGROUND"])
+        elif widget_class in ["Button", "Menubutton", "TMenubutton"]: bg = self.theme["BUTTON"]
+        elif widget_class == "Listbox":
+            bg = self.theme["BUTTON"]
+            widget.config(selectbackground=self.theme["ACCENT"])
+        elif widget_class == "Scrollbar": widget.config(troughcolor=self.theme["BUTTON"])
+        
+        try: widget.config(bg=bg, fg=fg)
+        except tk.TclError:
+            try: widget.config(bg=bg)
+            except tk.TclError: pass
+
+    def _configure_special_widgets(self):
         self.config(bg=self.theme["BACKGROUND"])
         self.menubar.config(bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"])
         self.settings_menu.config(bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"])
-
-        for widget in self.all_widgets:
-            widget_class = widget.winfo_class()
-            bg_color, fg_color = self.theme["BACKGROUND"], self.theme["FOREGROUND"]
-
-            if widget in [self.session_frame, self.session_label]: bg_color = self.theme["SESSION_BG"]
-            elif widget == self.goal_label: fg_color = self.theme["ACCENT"]
-            elif widget_class == "Entry":
-                bg_color = self.theme["BUTTON"]
-                fg_color = "grey" if widget.get() == "Enter task here..." else self.theme["FOREGROUND"]
-                widget.config(insertbackground=self.theme["FOREGROUND"])
-            elif widget_class in ["Button", "Menubutton", "TMenubutton"]: bg_color = self.theme["BUTTON"]
-            elif widget_class == "Listbox":
-                bg_color = self.theme["BUTTON"]
-                widget.config(selectbackground=self.theme["ACCENT"])
-            elif widget_class == "Scrollbar": widget.config(troughcolor=self.theme["BUTTON"])
-            
-            try: widget.config(bg=bg_color, fg=fg_color)
-            except tk.TclError:
-                try: widget.config(bg=bg_color)
-                except tk.TclError: pass
-        
         self._update_mode_buttons_display()
         for name, btn in self.control_buttons.items():
             btn.config(bg=self.theme[name.upper()], fg=self.theme["FOREGROUND"], activebackground=self.theme[f"{name.upper()}_ACTIVE"])
@@ -428,10 +439,15 @@ class PomodoroTimer(tk.Tk):
     def _load_tasks_to_listbox(self):
         for task in self.task_data.get('tasks', []):
             self.task_listbox.insert(tk.END, task['text'])
-            priority_char = task['text'][1]
-            priority = next((p for p in PRIORITIES if p.startswith(priority_char)), None)
-            if priority: self.task_listbox.itemconfig(tk.END, {'fg': self.theme[f"{priority.upper()}_PRIORITY"]})
+        self._recolor_tasks()
         self._sort_tasks()
+
+    def _recolor_tasks(self):
+        for i in range(self.task_listbox.size()):
+            task_text = self.task_listbox.get(i)
+            priority_char = task_text[1]
+            priority = next((p for p in PRIORITIES if p.startswith(priority_char)), None)
+            if priority: self.task_listbox.itemconfig(i, {'fg': self.theme[f"{priority.upper()}_PRIORITY"]})
 
     def _check_daily_goal(self):
         goal_data = self._load_json(GOAL_FILE, default={})
@@ -513,6 +529,10 @@ class PomodoroTimer(tk.Tk):
     def _on_closing(self): self._save_json(SETTINGS_FILE, self.settings); self._save_tasks(); self.destroy()
 
 # --- 6. Main Execution Block ---
-if __name__ == "__main__":
+def main():
+    """Creates and runs the Pomodoro Timer application."""
     app = PomodoroTimer()
     app.mainloop()
+
+if __name__ == "__main__":
+    main()
