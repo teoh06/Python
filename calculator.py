@@ -51,6 +51,7 @@ class GPACalculatorGUI(GPACalculatorBase):
         super().__init__()
         self.master = master
         master.title("GPA Calculator")
+        master.geometry("500x400")
 
         # GUI widgets
         self.course_label = tk.Label(master, text="Course Name:")
@@ -136,4 +137,5 @@ if __name__ == "__main__":
     # Comments and execution
     root = tk.Tk()
     app = GPACalculatorGUI(root)
+
     root.mainloop()
