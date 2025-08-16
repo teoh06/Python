@@ -38,10 +38,12 @@ MODES = {
     "POMODORO": "Pomodoro", "SHORT_BREAK": "Short Break",
     "LONG_BREAK": "Long Break", "STOPWATCH": "Stopwatch"
 }
+
 DEFAULT_SETTINGS = {
     "pomodoro_duration": 25 * 60, "short_break_duration": 5 * 60, "long_break_duration": 15 * 60,
     "long_break_interval": 4, "sound_file_path": "", "theme": "dark"
 }
+
 PRIORITIES = ["High", "Medium", "Low"]
 
 MOTIVATIONAL_QUOTES = [
@@ -68,34 +70,56 @@ class CustomDialog(tk.Toplevel):
         self.result = None
         self.protocol("WM_DELETE_WINDOW", self._on_cancel)
 
-    def _create_buttons(self):
+    def _create_buttons(self, show_save=True):
         btn_frame = tk.Frame(self, bg=self.theme["BACKGROUND"]); btn_frame.pack(pady=15)
-        tk.Button(btn_frame, text="Save", command=self._on_save, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat").pack(side="left", padx=10)
-        tk.Button(btn_frame, text="Cancel", command=self._on_cancel, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat").pack(side="left", padx=10)
+        if show_save:
+            tk.Button(btn_frame, text="Save", command=self._on_save, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat").pack(side="left", padx=10)
+        tk.Button(btn_frame, text="Close", command=self._on_cancel, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat").pack(side="left", padx=10)
 
     def _on_save(self): raise NotImplementedError
     def _on_cancel(self): self.result = None; self.destroy()
 
 class SettingsWindow(CustomDialog):
     def __init__(self, parent, current_settings, theme):
-        super().__init__(parent, "Settings", theme, "450x300")
+        super().__init__(parent, "Settings", theme, "450x550")
         self.duration_entries = {}
-        frame = tk.Frame(self, bg=self.theme["BACKGROUND"], padx=20, pady=20); frame.pack(fill="both", expand=True)
+        
+        main_frame = tk.Frame(self, bg=self.theme["BACKGROUND"], padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True)
+
+        timer_frame = tk.LabelFrame(main_frame, text="Timer Durations", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], padx=10, pady=10)
+        timer_frame.pack(fill="x", expand=True, pady=(0, 10))
 
         for i, (key, text) in enumerate({"pomodoro_duration": "Pomodoro:", "short_break_duration": "Short Break:", "long_break_duration": "Long Break:"}.items()):
-            tk.Label(frame, text=text, bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], font=(FONT_FAMILY, 10)).grid(row=i, column=0, sticky='w', pady=5)
+            tk.Label(timer_frame, text=text, bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], font=(FONT_FAMILY, 10)).grid(row=i, column=0, sticky='w', pady=5)
             mins, secs = divmod(current_settings.get(key, 0), 60)
-            min_entry = tk.Entry(frame, width=5, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); min_entry.insert(0, str(mins)); min_entry.grid(row=i, column=1, padx=(10,0))
-            tk.Label(frame, text="min", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=i, column=2, padx=(2,10))
-            sec_entry = tk.Entry(frame, width=5, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); sec_entry.insert(0, str(secs)); sec_entry.grid(row=i, column=3)
-            tk.Label(frame, text="sec", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=i, column=4, padx=2)
+            min_entry = tk.Entry(timer_frame, width=5, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); min_entry.insert(0, str(mins)); min_entry.grid(row=i, column=1, padx=(10,0))
+            tk.Label(timer_frame, text="min", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=i, column=2, padx=(2,10))
+            sec_entry = tk.Entry(timer_frame, width=5, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); sec_entry.insert(0, str(secs)); sec_entry.grid(row=i, column=3)
+            tk.Label(timer_frame, text="sec", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=i, column=4, padx=2)
             self.duration_entries[key] = (min_entry, sec_entry)
 
-        tk.Label(frame, text="Long Break Interval:", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=4, column=0, sticky='w', pady=5)
-        self.interval_entry = tk.Entry(frame, width=5, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); self.interval_entry.insert(0, str(current_settings.get("long_break_interval", 4))); self.interval_entry.grid(row=4, column=1, padx=(10,0))
-        tk.Label(frame, text="Sound File:", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=5, column=0, sticky='w', pady=10)
-        self.sound_entry = tk.Entry(frame, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); self.sound_entry.insert(0, current_settings.get("sound_file_path", "")); self.sound_entry.grid(row=5, column=1, columnspan=4, sticky='ew', padx=(10,0))
-        tk.Button(frame, text="Browse...", bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], command=self._browse, relief="flat").grid(row=5, column=5, padx=5)
+        tk.Label(timer_frame, text="Long Break Interval:", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=3, column=0, sticky='w', pady=5)
+        self.interval_entry = tk.Entry(timer_frame, width=5, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); self.interval_entry.insert(0, str(current_settings.get("long_break_interval", 4))); self.interval_entry.grid(row=3, column=1, padx=(10,0))
+        
+        tk.Label(timer_frame, text="Sound File:", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=4, column=0, sticky='w', pady=10)
+        self.sound_entry = tk.Entry(timer_frame, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); self.sound_entry.insert(0, current_settings.get("sound_file_path", "")); self.sound_entry.grid(row=4, column=1, columnspan=4, sticky='ew', padx=(10,0))
+        tk.Button(timer_frame, text="Browse...", bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], command=self._browse, relief="flat").grid(row=4, column=5, padx=5)
+
+        shortcuts_frame = tk.LabelFrame(main_frame, text="Keyboard Shortcuts", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], padx=10, pady=10)
+        shortcuts_frame.pack(fill="x", expand=True)
+        
+        shortcuts = {
+            "Start / Pause Timer": "Spacebar", "Reset Timer": "R", "Switch to Pomodoro": "Ctrl + P",
+            "Switch to Short Break": "Ctrl + S", "Switch to Long Break": "Ctrl + L", "Switch to Stopwatch": "Ctrl + T",
+            "Add New Task": "Ctrl + Enter", "Delete Selected Task": "Delete", "Delete All Tasks": "Ctrl + D",
+            "Quit Application": "Ctrl + Q"
+        }
+        for i, (action, key) in enumerate(shortcuts.items()):
+            tk.Label(shortcuts_frame, text=action, bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"]).grid(row=i, column=0, sticky="w", padx=5)
+            tk.Label(shortcuts_frame, text=key, bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], font=(FONT_FAMILY, 10, "bold")).grid(row=i, column=1, sticky="e", padx=5)
+        shortcuts_frame.columnconfigure(1, weight=1)
+
         self._create_buttons()
 
     def _browse(self):
@@ -146,7 +170,7 @@ class PomodoroTimer(tk.Tk):
                 pygame.mixer.init()
             except pygame.error:
                 print("Pygame mixer could not be initialized.")
-                
+
         self.settings = self._load_settings()
         self.theme_name = self.settings.get("theme", "dark")
         self.theme = THEMES[self.theme_name]
@@ -157,6 +181,7 @@ class PomodoroTimer(tk.Tk):
         self.is_running = False
         self.timer_id = None
         self.stopwatch_time = 0
+        self.sound_channel = None
         self.task_data = self._load_json(TASKS_FILE, default={'tasks': [], 'descriptions': {}})
         self.task_descriptions = self.task_data.get('descriptions', {})
         self.mode_buttons = {}
@@ -171,11 +196,8 @@ class PomodoroTimer(tk.Tk):
         self.all_widgets.append(self.main_frame)
 
         self._setup_ui()
+        self._bind_shortcuts()
         self.after(100, self._check_daily_goal)
-
-        self.bind("<space>", lambda e: self.toggle_start_pause())
-        self.bind("<Delete>", lambda e: self.delete_task())
-        self.task_entry.bind("<Control-Return>", lambda e: self.add_task())
 
     def _setup_ui(self):
         self._create_menu()
@@ -207,7 +229,7 @@ class PomodoroTimer(tk.Tk):
         self.settings_menu.add_command(label="Configure Timers", command=self.open_settings_window)
         self.settings_menu.add_separator()
         self.settings_menu.add_command(label="Reset Defaults", command=self.reset_settings)
-        self.menubar.add_command(label="☀️ Light /🌙 Dark ", command=self.toggle_theme)
+        self.menubar.add_command(label="☀️ Light /🌙 Dark", command=self.toggle_theme)
 
     def _create_mode_buttons(self):
         self.mode_frame = tk.Frame(self.main_frame); self.mode_frame.pack(pady=10); self.all_widgets.append(self.mode_frame)
@@ -245,6 +267,18 @@ class PomodoroTimer(tk.Tk):
         self.task_listbox.bind("<Double-Button-1>", self.edit_task_description)
         self.scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=self.task_listbox.yview); self.scrollbar.pack(side="right", fill="y"); self.all_widgets.append(self.scrollbar)
         self.task_listbox.config(yscrollcommand=self.scrollbar.set)
+
+    def _bind_shortcuts(self):
+        self.bind("<space>", lambda e: self.toggle_start_pause())
+        self.bind("<r>", lambda e: self.reset_timer())
+        self.bind("<Control-p>", lambda e: self.switch_mode(MODES["POMODORO"]))
+        self.bind("<Control-s>", lambda e: self.switch_mode(MODES["SHORT_BREAK"]))
+        self.bind("<Control-l>", lambda e: self.switch_mode(MODES["LONG_BREAK"]))
+        self.bind("<Control-t>", lambda e: self.switch_mode(MODES["STOPWATCH"]))
+        self.task_entry.bind("<Control-Return>", lambda e: self.add_task())
+        self.bind("<Delete>", lambda e: self.delete_task())
+        self.bind("<Control-d>", lambda e: self.delete_all_tasks())
+        self.bind("<Control-q>", lambda e: self._on_closing())
 
     def toggle_theme(self):
         self.theme_name = "light" if self.theme_name == "dark" else "dark"
@@ -332,6 +366,10 @@ class PomodoroTimer(tk.Tk):
     def _handle_timer_completion(self):
         self._play_sound()
         messagebox.showinfo("Timer Finished!", f"{self.current_mode} session is complete!")
+        if self.sound_channel:
+            self.sound_channel.stop()
+            self.sound_channel = None
+
         next_mode = MODES["POMODORO"]
         if self.current_mode == MODES["POMODORO"]:
             self.sessions_completed += 1
@@ -441,18 +479,16 @@ class PomodoroTimer(tk.Tk):
         for text, color in tasks: self.task_listbox.insert(tk.END, text); self.task_listbox.itemconfig(tk.END, {'fg': color})
 
     def _play_sound(self):
-        def play():
-            sound_path = self.settings.get("sound_file_path")
-            if SOUND_MODULE and pygame.mixer.get_init() and sound_path and os.path.exists(sound_path):
-                try: 
-                    pygame.mixer.music.load(sound_path)
-                    pygame.mixer.music.play()
-                except pygame.error as e: 
-                    print(f"Error playing sound: {e}")
-                    self.bell()
-            else: 
+        sound_path = self.settings.get("sound_file_path")
+        if SOUND_MODULE and pygame.mixer.get_init() and sound_path and os.path.exists(sound_path):
+            try: 
+                sound = pygame.mixer.Sound(sound_path)
+                self.sound_channel = sound.play()
+            except pygame.error as e: 
+                print(f"Error playing sound: {e}")
                 self.bell()
-        threading.Thread(target=play, daemon=True).start()
+        else: 
+            self.bell()
 
     def _load_settings(self):
         settings = self._load_json(SETTINGS_FILE, default=DEFAULT_SETTINGS.copy())
