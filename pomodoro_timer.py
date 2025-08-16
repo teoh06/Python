@@ -52,7 +52,6 @@ MOTIVATIONAL_QUOTES = [
 # --- 3. Sound Module Initialization ---
 try:
     import pygame
-    pygame.mixer.init()
     SOUND_MODULE = 'pygame'
 except ImportError:
     SOUND_MODULE = None
@@ -142,6 +141,12 @@ class DailyGoalDialog(CustomDialog):
 class PomodoroTimer(tk.Tk):
     def __init__(self):
         super().__init__()
+        if SOUND_MODULE:
+            try:
+                pygame.mixer.init()
+            except pygame.error:
+                print("Pygame mixer could not be initialized.")
+                
         self.settings = self._load_settings()
         self.theme_name = self.settings.get("theme", "dark")
         self.theme = THEMES[self.theme_name]
@@ -202,7 +207,7 @@ class PomodoroTimer(tk.Tk):
         self.settings_menu.add_command(label="Configure Timers", command=self.open_settings_window)
         self.settings_menu.add_separator()
         self.settings_menu.add_command(label="Reset Defaults", command=self.reset_settings)
-        self.menubar.add_command(label="☀️ Light /🌙 Dark", command=self.toggle_theme)
+        self.menubar.add_command(label="☀️ Light /🌙 Dark ", command=self.toggle_theme)
 
     def _create_mode_buttons(self):
         self.mode_frame = tk.Frame(self.main_frame); self.mode_frame.pack(pady=10); self.all_widgets.append(self.mode_frame)
@@ -438,10 +443,15 @@ class PomodoroTimer(tk.Tk):
     def _play_sound(self):
         def play():
             sound_path = self.settings.get("sound_file_path")
-            if SOUND_MODULE and sound_path and os.path.exists(sound_path):
-                try: pygame.mixer.music.load(sound_path); pygame.mixer.music.play()
-                except Exception as e: print(f"Error playing sound: {e}"); self.bell()
-            else: self.bell()
+            if SOUND_MODULE and pygame.mixer.get_init() and sound_path and os.path.exists(sound_path):
+                try: 
+                    pygame.mixer.music.load(sound_path)
+                    pygame.mixer.music.play()
+                except pygame.error as e: 
+                    print(f"Error playing sound: {e}")
+                    self.bell()
+            else: 
+                self.bell()
         threading.Thread(target=play, daemon=True).start()
 
     def _load_settings(self):
