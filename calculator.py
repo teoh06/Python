@@ -61,13 +61,16 @@ class App:
     CONFIG_FILE = "gpa_config.json"
     GRADE_POINTS = {'A+': 4.0, 'A': 4.0, 'A-': 3.67, 'B+': 3.33, 'B': 3.0, 'B-': 2.67, 'C+': 2.33, 'C': 2.0, 'F': 0.0}
 
-    def __init__(self, master):
+    def __init__(self, master, initial_courses=None):
         self.master = master
-        self.courses = []
+        # Initialize courses with provided data or as an empty list
+        self.courses = initial_courses or []
         self._setup_theme()
         self._setup_styles()
         self._create_widgets()
         self._apply_theme()
+        # Populate the view with initial data if it exists
+        self.update_view()
 
     def _setup_theme(self):
         self.themes = {
@@ -198,7 +201,50 @@ class App:
         with open(self.CONFIG_FILE, 'w') as f: json.dump({"theme": self.current_theme}, f)
         self._apply_theme()
 
+def main(initial_courses=None):
+    """
+    Launches the GPA Calculator application.
+
+    Args:
+        initial_courses (list, optional): A list of course dictionaries to pre-populate the calculator.
+                                          Each dictionary should have 'course', 'credits', and 'grade' keys.
+                                          Defaults to None.
+
+    Returns:
+        list: The final list of course dictionaries after the application window is closed.
+    """
+    try:
+        root = tk.Tk()
+        app = App(root, initial_courses=initial_courses)
+        root.mainloop()
+        return app.courses
+    except Exception as e:
+        print(f"An error occurred while running the application: {e}")
+        return initial_courses or [] # Return original data on error
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    # This block demonstrates how to use the new `main` function.
+    # It will only run when this script is executed directly.
+
+    # --- EXAMPLE 1: Run the calculator empty ---
+    print("🚀 Launching the GPA Calculator (Run 1)...")
+    final_courses_run1 = main()
+    print("\n✅ Calculator closed. Final courses from Run 1:")
+    print(json.dumps(final_courses_run1, indent=2))
+    print("\n" + "="*60 + "\n")
+
+
+    # --- EXAMPLE 2: Run the calculator with pre-populated data ---
+    print("🚀 Launching the GPA Calculator with initial data (Run 2)...")
+    sample_data = [
+        {'course': 'Introduction to AI', 'credits': 3.0, 'grade': 'A'},
+        {'course': 'Software Engineering', 'credits': 4.0, 'grade': 'B+'},
+        {'course': 'Calculus II', 'credits': 4.0, 'grade': 'A-'}
+    ]
+    
+    # The 'updated_courses' variable will hold the data after the user
+    # adds, edits, or deletes courses and closes the window.
+    updated_courses = main(initial_courses=sample_data)
+
+    print("\n✅ Calculator closed. Final courses from Run 2:")
+    print(json.dumps(updated_courses, indent=2))
