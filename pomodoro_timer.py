@@ -67,6 +67,8 @@ class CustomDialog(tk.Toplevel):
         self.transient(parent); self.grab_set()
         self.result = None
         self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+        self.lift()
+        self.focus_force()
 
     def _create_buttons(self, show_save=True):
         btn_frame = tk.Frame(self, bg=self.theme["BACKGROUND"]); btn_frame.pack(pady=15)
@@ -79,13 +81,14 @@ class CustomDialog(tk.Toplevel):
 
 class SettingsWindow(CustomDialog):
     def __init__(self, parent, current_settings, theme):
-        super().__init__(parent, "Settings", theme, "450x550")
+        super().__init__(parent, "Settings", theme, "450x700")
+        self.parent_app = parent
         self.duration_entries = {}
         
         main_frame = tk.Frame(self, bg=self.theme["BACKGROUND"], padx=20, pady=20)
         main_frame.pack(fill="both", expand=True)
 
-        timer_frame = tk.LabelFrame(main_frame, text="Timer Durations", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], padx=10, pady=10)
+        timer_frame = tk.LabelFrame(main_frame, text="Timer Configurations", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], padx=10, pady=10)
         timer_frame.pack(fill="x", expand=True, pady=(0, 10))
 
         for i, (key, text) in enumerate({"pomodoro_duration": "Pomodoro:", "short_break_duration": "Short Break:", "long_break_duration": "Long Break:"}.items()):
@@ -104,6 +107,12 @@ class SettingsWindow(CustomDialog):
         self.sound_entry = tk.Entry(timer_frame, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat"); self.sound_entry.insert(0, current_settings.get("sound_file_path", "")); self.sound_entry.grid(row=4, column=1, columnspan=4, sticky='ew', padx=(10,0))
         tk.Button(timer_frame, text="Browse...", bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], command=self._browse, relief="flat").grid(row=4, column=5, padx=5)
 
+        # Apply and Reset buttons for timer durations
+        timer_btn_frame = tk.Frame(timer_frame, bg=self.theme["BACKGROUND"])
+        timer_btn_frame.grid(row=5, column=0, columnspan=6, pady=10, sticky="e")
+        tk.Button(timer_btn_frame, text="Apply", command=self._apply_timer_settings, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat").pack(side="left", padx=5)
+        tk.Button(timer_btn_frame, text="Reset", command=self._reset_timer_fields, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat").pack(side="left")
+
         shortcuts_frame = tk.LabelFrame(main_frame, text="Keyboard Shortcuts", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], padx=10, pady=10)
         shortcuts_frame.pack(fill="x", expand=True)
         
@@ -119,6 +128,30 @@ class SettingsWindow(CustomDialog):
         shortcuts_frame.columnconfigure(1, weight=1)
 
         self._create_buttons()
+
+    def _apply_timer_settings(self):
+        try:
+            new_settings = {}
+            for key, (min_e, sec_e) in self.duration_entries.items():
+                new_settings[key] = int(min_e.get() or 0) * 60 + int(sec_e.get() or 0)
+            
+            interval = int(self.interval_entry.get() or 1)
+            if interval <= 0: raise ValueError("Interval must be positive.")
+            new_settings["long_break_interval"] = interval
+            
+            self.parent_app.update_timer_settings(new_settings)
+            messagebox.showinfo("Success", "Timer settings applied.", parent=self)
+        except (ValueError, TypeError):
+            messagebox.showerror("Invalid Input", "Please enter valid numbers for timer settings.", parent=self)
+
+    def _reset_timer_fields(self):
+        for key, (min_e, sec_e) in self.duration_entries.items():
+            mins, secs = divmod(DEFAULT_SETTINGS.get(key, 0), 60)
+            min_e.delete(0, tk.END); min_e.insert(0, str(mins))
+            sec_e.delete(0, tk.END); sec_e.insert(0, str(secs))
+        self.interval_entry.delete(0, tk.END)
+        self.interval_entry.insert(0, str(DEFAULT_SETTINGS.get("long_break_interval", 4)))
+        self._apply_timer_settings()
 
     def _browse(self):
         path = filedialog.askopenfilename(title="Select Sound File", filetypes=[("Audio Files", "*.wav *.mp3")])
@@ -195,7 +228,7 @@ class PomodoroTimer(tk.Toplevel):
 
         self._setup_ui()
         self._bind_shortcuts()
-        self.after(100, self._check_daily_goal)
+        self.after(250, self._check_daily_goal)
 
     def _setup_ui(self):
         self._create_menu()
@@ -227,7 +260,8 @@ class PomodoroTimer(tk.Toplevel):
         self.settings_menu.add_command(label="Configure Timers", command=self.open_settings_window)
         self.settings_menu.add_separator()
         self.settings_menu.add_command(label="Reset Defaults", command=self.reset_settings)
-        self.menubar.add_command(label="☀️/🌙", command=self.toggle_theme)
+        self.menubar.add_command(label="☀️ Light /🌙 Dark ", command=self.toggle_theme)
+        self.menubar.add_command(label="Exit", command=self._on_closing)
 
     def _create_mode_buttons(self):
         self.mode_frame = tk.Frame(self.main_frame); self.mode_frame.pack(pady=10); self.all_widgets.append(self.mode_frame)
@@ -432,6 +466,11 @@ class PomodoroTimer(tk.Toplevel):
             self.switch_mode(self.current_mode, force_reset=True)
             messagebox.showinfo("Settings Reset", "Settings have been reset to default values.")
 
+    def update_timer_settings(self, new_durations):
+        self.settings.update(new_durations)
+        self._save_json(SETTINGS_FILE, self.settings)
+        self.switch_mode(self.current_mode, force_reset=True)
+
     def _save_tasks(self):
         tasks = [{'text': self.task_listbox.get(i), 'color': self.task_listbox.itemcget(i, 'fg')} for i in range(self.task_listbox.size())]
         self._save_json(TASKS_FILE, {'tasks': tasks, 'descriptions': self.task_descriptions})
@@ -531,7 +570,9 @@ class PomodoroTimer(tk.Toplevel):
 # --- 6. Main Execution Block ---
 def main():
     """Creates and runs the Pomodoro Timer application."""
-    app = PomodoroTimer()
+    root = tk.Tk()
+    root.withdraw() # Hide the root window
+    app = PomodoroTimer(root)
     app.mainloop()
 
 if __name__ == "__main__":
