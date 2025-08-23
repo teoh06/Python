@@ -423,6 +423,9 @@ class ReminderApp:
     def stop_sound(self):
         if HAS_WINSOUND: winsound.PlaySound(None, winsound.SND_PURGE)
 
+    # =============================================================
+    # --- REPLACE THIS FUNCTION IN YOUR SCRIPT ---
+    # =============================================================
     def show_notification(self, reminder):
         popup = tk.Toplevel(self.root); popup.title("Reminder!"); popup.geometry("450x300")
         popup.transient(self.root); popup.grab_set(); popup.attributes("-topmost", True); popup.configure(bg=COLORS["background"])
@@ -447,9 +450,26 @@ class ReminderApp:
             on_popup_close()
         def on_popup_close(): self.stop_sound(); self.refresh_list(); popup.destroy()
 
-        ttk.Button(btn_row, text="Snooze 5m", command=lambda: snooze(5)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_row, text="Snooze 10m", command=lambda: snooze(10)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_row, text="Dismiss", command=dismiss, style="Primary.TButton").pack(side=tk.LEFT, padx=(15, 5))
+        # --- FIX START: Switched from ttk.Button to tk.Button for reliable color control ---
+        font_tuple = ("Segoe UI", 10)
+        
+        # Standard buttons
+        snooze5_btn = tk.Button(btn_row, text="Snooze 5m", command=lambda: snooze(5),
+                            font=font_tuple, bg=COLORS["accent"], fg=COLORS["foreground"],
+                            relief="flat", activebackground="#cccccc", activeforeground=COLORS["foreground"])
+        snooze5_btn.pack(side=tk.LEFT, padx=5, ipady=4, ipadx=8)
+
+        snooze10_btn = tk.Button(btn_row, text="Snooze 10m", command=lambda: snooze(10),
+                                font=font_tuple, bg=COLORS["accent"], fg=COLORS["foreground"],
+                                relief="flat", activebackground="#cccccc", activeforeground=COLORS["foreground"])
+        snooze10_btn.pack(side=tk.LEFT, padx=5, ipady=4, ipadx=8)
+
+        # Primary action button
+        dismiss_btn = tk.Button(btn_row, text="Dismiss", command=dismiss,
+                            font=font_tuple, bg=COLORS["primary"], fg=COLORS["primary_fg"],
+                            relief="flat", activebackground="#005a9e", activeforeground=COLORS["primary_fg"])
+        dismiss_btn.pack(side=tk.LEFT, padx=(15, 5), ipady=4, ipadx=8)
+        # --- FIX END ---
 
     def start_sound_loop(self):
         self.stop_sound(); sound_file = get_setting("sound_file")
