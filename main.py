@@ -3,8 +3,8 @@ from tkinter import font, messagebox
 
 # --- Import your applications (keep as-is) ---
 import pomodoro_timer
-import calculator
-import Simple_Reminder_app
+import gpa_calculator
+import reminder_app
 
 
 class HoverCard(tk.Frame):
@@ -302,4 +302,5 @@ class StudentAssistantApp(tk.Tk):
 if __name__ == "__main__":
     app = StudentAssistantApp()
     app.mainloop()
+
 
