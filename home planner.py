@@ -55,6 +55,7 @@ class HomeworkPlanner:
         tk.Button(frame, text="Add Task", command=self.add_task).grid(row=3, column=0, pady=5)
         tk.Button(frame, text="Delete Selected", command=self.delete_task).grid(row=3, column=1, pady=5)
         tk.Button(frame, text="Mark as Done", command=self.mark_done).grid(row=3, column=2, pady=5)
+        tk.Button(frame, text="Mark as Not Done", command=self.mark_not_done).grid(row=3, column=3, pady=5)
 
         # Table
         columns = ("Subject", "Title", "Deadline", "Priority", "Status", "Notes")
@@ -130,6 +131,15 @@ class HomeworkPlanner:
             return
         idx = self.tree.index(selected[0])
         self.tasks[idx]["status"] = "Done"
+        save_tasks(self.tasks)
+        self.refresh_table()
+
+    def mark_not_done(self):
+        selected = self.tree.selection()
+        if not selected:
+            return
+        idx = self.tree.index(selected[0])
+        self.tasks[idx]["status"] = "Not Done"
         save_tasks(self.tasks)
         self.refresh_table()
 
