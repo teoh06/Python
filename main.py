@@ -290,10 +290,10 @@ class StudentAssistantApp(tk.Tk):
         pomodoro_timer.main()
 
     def open_calculator(self):
-        calculator.main()
+        gpa_calculator.main()
 
     def open_reminder(self):
-        Simple_Reminder_app.main()
+        reminder_app.main()
 
     def coming_soon(self):
         messagebox.showinfo("Coming Soon", "This feature is under development.")
@@ -302,3 +302,4 @@ class StudentAssistantApp(tk.Tk):
 if __name__ == "__main__":
     app = StudentAssistantApp()
     app.mainloop()
+
