@@ -3,8 +3,6 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)
 ![License](https://img.shields.io/badge/License-Academic-brightgreen)
 
-Of course. Here's a comprehensive README file in Markdown format for your Student Assistant application.
-
 -----
 
 # Student Assistant Program
@@ -111,4 +109,5 @@ Enjoy using the Student Assistant Program\! 🎉
 ---
 
 *This project was developed as part of the AMCS1034 Software Development Fundamentals course requirements at TAR UMT.*
+
 
