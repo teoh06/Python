@@ -6,6 +6,8 @@ import random
 import pomodoro_timer
 import gpa_calculator
 import reminder_app
+# --- MODIFIED: Imported the new homework planner application ---
+import home_planner
 
 
 class HoverCard(tk.Frame):
@@ -134,6 +136,7 @@ class StudentAssistantApp(tk.Tk):
             "Tip: Short, frequent breaks can boost overall productivity.",
             "Tip: Keep your GPA calculator updated to track academic progress.",
             "Tip: Use the reminder app for deadlines, exams, and important events.",
+            "Tip: Plan your homework to avoid last-minute stress.",
             "Tip: You can open and use multiple tools at the same time."
         ]
 
@@ -217,7 +220,7 @@ class StudentAssistantApp(tk.Tk):
         while new_tip == current_tip and len(self.tips) > 1:
             new_tip = random.choice(self.tips)
         self.tip_label.config(text=new_tip)
-        self.after(5000, self._update_tip)
+        self.after(7000, self._update_tip)
 
     def _build_cards(self):
         grid_wrap = tk.Frame(self.background_canvas, bg=self.bg_grad_start)
@@ -226,11 +229,13 @@ class StudentAssistantApp(tk.Tk):
             grid_wrap.grid_columnconfigure(i, weight=1, uniform="col")
         for r in range(2):
             grid_wrap.grid_rowconfigure(r, weight=1)
+            
+        # --- MODIFIED: Replaced the "Coming Soon" card with the "Homework Planner" ---
         cards_data = [
             {"icon": "⏱️", "title": "Pomodoro Timer", "subtitle": "Stay focused with 25/5 cycles", "desc": "Use focused sprints with short breaks to boost productivity.", "btn": "Open Pomodoro →", "accent": self.accent_pink, "cmd": self.open_pomodoro},
             {"icon": "📊", "title": "GPA Calculator", "subtitle": "Quickly compute your GPA", "desc": "Add courses and credits to see your overall performance.", "btn": "Open Calculator →", "accent": self.accent_emerald, "cmd": self.open_calculator},
             {"icon": "🗓️", "title": "Reminder App", "subtitle": "Never miss important tasks", "desc": "Set simple reminders to stay on top of deadlines.", "btn": "Open Reminders →", "accent": self.accent_sky, "cmd": self.open_reminder},
-            {"icon": "✨", "title": "Coming Soon", "subtitle": "New tools are on the way", "desc": "Have an idea? Share what you’d like to see next.", "btn": "Notify Me →", "accent": self.accent_indigo, "cmd": self.coming_soon}
+            {"icon": "📚", "title": "Homework Planner", "subtitle": "Organize your assignments", "desc": "Track subjects, titles, and deadlines to stay on top of your work.", "btn": "Open Planner →", "accent": self.accent_indigo, "cmd": self.open_homework_planner}
         ]
         positions = [(0, 0), (0, 1), (1, 0), (1, 1)]
         for cfg, (r, c) in zip(cards_data, positions):
@@ -248,7 +253,6 @@ class StudentAssistantApp(tk.Tk):
         
         exit_button = tk.Button(footer, text="Exit Program →", command=self.destroy, bg="#CC0000", fg=self.fg_secondary, activebackground="#990000", activeforeground="white", relief="flat", cursor="hand2", font=("Helvetica Neue", 9, "bold"))
         
-        # --- MODIFIED: Added 10px padding to the bottom ---
         exit_button.pack(pady=(12, 10), ipady=5, ipadx=10)
         
         self._apply_button_effects(exit_button, "#CC0000", "#FF0000", leave_fg=self.fg_secondary)
@@ -267,7 +271,8 @@ class StudentAssistantApp(tk.Tk):
         self.geometry(f"{w}x{h}+{x}+{y}")
 
     def _open_random_app(self):
-        possible_actions = [self.open_pomodoro, self.open_calculator, self.open_reminder]
+        # --- MODIFIED: Added homework planner to the random choices ---
+        possible_actions = [self.open_pomodoro, self.open_calculator, self.open_reminder, self.open_homework_planner]
         random_action = random.choice(possible_actions)
         random_action()
 
@@ -280,8 +285,11 @@ class StudentAssistantApp(tk.Tk):
     def open_reminder(self):
         reminder_app.main(self)
 
-    def coming_soon(self):
-        messagebox.showinfo("Coming Soon", "This feature is under development.")
+    # --- MODIFIED: Added method to launch the homework planner ---
+    def open_homework_planner(self):
+        home_planner.main()
+
+    # --- REMOVED: The coming_soon method is no longer needed ---
 
 
 if __name__ == "__main__":
