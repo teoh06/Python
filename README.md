@@ -42,22 +42,15 @@ This application is a comprehensive Student Assistant tool developed for the **A
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/teoh06/Python.git
-   cd tar-umt-student-assistant
+   cd [your_file_path]
    ```
 
-2. **Create a virtual environment (recommended):**
+2. **Install dependencies:**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/MacOS
-   venv\Scripts\activate    # Windows
+   pip install pygame
    ```
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Verify installation:**
+3. **Verify installation:**
    ```bash
    python --version
    # Should show Python 3.8+
@@ -75,9 +68,9 @@ Upon launching, you'll see the main menu:
 ```
 ===== TAR UMT STUDENT ASSISTANT =====
 1. GPA Calculator
-2. Homework Planner
-3. Study Pomodoro Timer
-4. Simple Reminder App
+2. Study Pomodoro Timer
+3. Simple Reminder App
+4. Homework Planner (Coming Soon)
 5. Exit
 
 Please select an option (1-5):
@@ -89,14 +82,13 @@ Navigate using number keys and follow the on-screen instructions for each featur
 ```
 ├── main.py                # Application entry point with main menu
 ├── gpa_calculator.py      # GPA calculation functionality
-├── homework_planner.py    # Homework management system
 ├── pomodoro_timer.py      # Pomodoro timer implementation
 ├── reminder_app.py        # Reminder application logic
+├── homework_planner.py    # Homework management system
 ├── data/                  # Persistent storage directory
 │   ├── gpa_data.json
 │   ├── homework_data.json
 │   └── reminders_data.json
-├── requirements.txt       # Python dependencies
 └── README.md              # Project documentation
 ```
 
