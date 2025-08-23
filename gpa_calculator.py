@@ -81,7 +81,7 @@ class App:
         except (FileNotFoundError, json.JSONDecodeError): self.current_theme = "light"
 
     def _setup_styles(self):
-        self.master.title("Modern GPA Calculator"); self.master.geometry("800x500"); self.master.minsize(700, 450)
+        self.master.title("Modern GPA Calculator"); self.master.geometry("1000x500"); self.master.minsize(700, 450)
         self.style = ttk.Style(self.master); self.style.theme_use('clam')
         self.style.configure("TEntry", borderwidth=1, relief="solid", padding=8, font=("Segoe UI", 10))
         self.style.configure("TButton", padding=8, relief="flat", borderwidth=0, font=("Segoe UI", 10))
@@ -248,3 +248,4 @@ if __name__ == "__main__":
 
     print("\n✅ Calculator closed. Final courses from Run 2:")
     print(json.dumps(updated_courses, indent=2))
+
