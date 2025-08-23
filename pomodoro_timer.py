@@ -10,9 +10,7 @@ import random
 from datetime import date
 
 # --- 2. Constants ---
-TASKS_FILE = "pomodoro_tasks.json"
-SETTINGS_FILE = "pomodoro_settings.json"
-GOAL_FILE = "daily_goal.json"
+DATA_FILE = "pomodoro_data.json" # Single file for all application data
 
 # UI Styling and Configuration
 FONT_FAMILY = "Comic Sans MS"
@@ -41,6 +39,11 @@ MODES = {
 DEFAULT_SETTINGS = {
     "pomodoro_duration": 25 * 60, "short_break_duration": 5 * 60, "long_break_duration": 15 * 60,
     "long_break_interval": 4, "sound_file_path": "", "theme": "dark"
+}
+DEFAULT_DATA = {
+    "settings": DEFAULT_SETTINGS.copy(),
+    "tasks_data": {'tasks': [], 'descriptions': {}},
+    "daily_goal": {"date": "", "goal": ""}
 }
 PRIORITIES = ["High", "Medium", "Low"]
 
@@ -202,7 +205,11 @@ class PomodoroTimer(tk.Toplevel):
             except pygame.error:
                 print("Pygame mixer could not be initialized.")
 
-        self.settings = self._load_settings()
+        self.app_data = self._load_data()
+        self.settings = self.app_data['settings']
+        self.task_data = self.app_data['tasks_data']
+        self.task_descriptions = self.task_data.get('descriptions', {})
+        
         self.theme_name = self.settings.get("theme", "dark")
         self.theme = THEMES[self.theme_name]
 
@@ -213,10 +220,9 @@ class PomodoroTimer(tk.Toplevel):
         self.timer_id = None
         self.stopwatch_time = 0
         self.sound_channel = None
-        self.task_data = self._load_json(TASKS_FILE, default={'tasks': [], 'descriptions': {}})
-        self.task_descriptions = self.task_data.get('descriptions', {})
         self.mode_buttons = {}
         self.all_widgets = []
+        self.clicked_task_index = None
 
         self.title("Study Pomodoro Timer"); self.geometry("500x800")
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
@@ -297,6 +303,7 @@ class PomodoroTimer(tk.Toplevel):
         list_frame = tk.Frame(self.task_frame); list_frame.pack(fill="both", expand=True); self.all_widgets.append(list_frame)
         self.task_listbox = tk.Listbox(list_frame, relief="flat", font=(FONT_FAMILY, 12), height=8); self.task_listbox.pack(side="left", fill="both", expand=True); self.all_widgets.append(self.task_listbox)
         self.task_listbox.bind("<Double-Button-1>", self.edit_task_description)
+        self.task_listbox.bind("<Button-3>", self._show_priority_menu) # NEW: Right-click binding
         self.scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=self.task_listbox.yview); self.scrollbar.pack(side="right", fill="y"); self.all_widgets.append(self.scrollbar)
         self.task_listbox.config(yscrollcommand=self.scrollbar.set)
 
@@ -447,13 +454,64 @@ class PomodoroTimer(tk.Toplevel):
             idx = self.task_listbox.curselection()[0]; task_text = self.task_listbox.get(idx)
             dialog = TaskDescriptionDialog(self, task_text, self.task_descriptions.get(task_text, ""), self.theme)
             self.wait_window(dialog)
-            if dialog.result is not None: self.task_descriptions[task_text] = dialog.result; self._save_tasks()
+            if dialog.result is not None: 
+                self.task_descriptions[task_text] = dialog.result
+                self._save_tasks()
         except IndexError: pass
+
+    def _show_priority_menu(self, event):
+        """Displays the priority context menu at the cursor position."""
+        try:
+            self.clicked_task_index = self.task_listbox.nearest(event.y)
+            self.task_listbox.selection_clear(0, tk.END)
+            self.task_listbox.selection_set(self.clicked_task_index)
+            self.task_listbox.activate(self.clicked_task_index)
+        except (tk.TclError, IndexError):
+            return
+
+        priority_menu = tk.Menu(self, tearoff=0)
+        for priority in PRIORITIES:
+            priority_menu.add_command(
+                label=f"Set Priority: {priority}",
+                command=lambda p=priority: self.change_task_priority(self.clicked_task_index, p)
+            )
+        
+        try:
+            priority_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            priority_menu.grab_release()
+
+    def change_task_priority(self, task_index, new_priority):
+        """Changes the priority of the task at the given index."""
+        try:
+            old_task_text = self.task_listbox.get(task_index)
+            task_content = old_task_text[4:]
+            new_task_text = f"[{new_priority[0]}] {task_content}"
+
+            if old_task_text in self.task_descriptions:
+                self.task_descriptions[new_task_text] = self.task_descriptions.pop(old_task_text)
+
+            self.task_listbox.delete(task_index)
+            self.task_listbox.insert(task_index, new_task_text)
+
+            self._sort_tasks()
+            self._save_tasks()
+
+            all_tasks = self.task_listbox.get(0, tk.END)
+            if new_task_text in all_tasks:
+                new_idx = all_tasks.index(new_task_text)
+                self.task_listbox.selection_set(new_idx)
+                self.task_listbox.activate(new_idx)
+                self.task_listbox.see(new_idx)
+
+        except IndexError:
+            messagebox.showerror("Error", "Could not change task priority.")
 
     def open_settings_window(self):
         dialog = SettingsWindow(self, self.settings, self.theme); self.wait_window(dialog)
         if dialog.result:
-            self.settings.update(dialog.result); self._save_json(SETTINGS_FILE, self.settings)
+            self.settings.update(dialog.result)
+            self._save_data()
             self.switch_mode(self.current_mode, force_reset=True)
             messagebox.showinfo("Settings Updated", "Timer settings have been saved.")
 
@@ -462,18 +520,21 @@ class PomodoroTimer(tk.Toplevel):
             theme = self.settings['theme'] # Preserve theme
             self.settings = DEFAULT_SETTINGS.copy()
             self.settings['theme'] = theme
-            self._save_json(SETTINGS_FILE, self.settings)
+            self.app_data['settings'] = self.settings
+            self._save_data()
             self.switch_mode(self.current_mode, force_reset=True)
             messagebox.showinfo("Settings Reset", "Settings have been reset to default values.")
 
     def update_timer_settings(self, new_durations):
         self.settings.update(new_durations)
-        self._save_json(SETTINGS_FILE, self.settings)
+        self._save_data()
         self.switch_mode(self.current_mode, force_reset=True)
 
     def _save_tasks(self):
         tasks = [{'text': self.task_listbox.get(i), 'color': self.task_listbox.itemcget(i, 'fg')} for i in range(self.task_listbox.size())]
-        self._save_json(TASKS_FILE, {'tasks': tasks, 'descriptions': self.task_descriptions})
+        self.app_data['tasks_data']['tasks'] = tasks
+        self.app_data['tasks_data']['descriptions'] = self.task_descriptions
+        self._save_data()
 
     def _load_tasks_to_listbox(self):
         for task in self.task_data.get('tasks', []):
@@ -489,7 +550,7 @@ class PomodoroTimer(tk.Toplevel):
             if priority: self.task_listbox.itemconfig(i, {'fg': self.theme[f"{priority.upper()}_PRIORITY"]})
 
     def _check_daily_goal(self):
-        goal_data = self._load_json(GOAL_FILE, default={})
+        goal_data = self.app_data.get('daily_goal', {})
         self.daily_goal = goal_data.get("goal", "") if goal_data.get("date") == str(date.today()) else ""
         self._update_goal_display()
         if not self.daily_goal: self.set_daily_goal(prompt="What is your main goal for today?")
@@ -498,7 +559,8 @@ class PomodoroTimer(tk.Toplevel):
         dialog = DailyGoalDialog(self, prompt, self.daily_goal, self.theme); self.wait_window(dialog)
         if dialog.result is not None:
             self.daily_goal = dialog.result.strip()
-            self._save_json(GOAL_FILE, {"date": str(date.today()), "goal": self.daily_goal})
+            self.app_data['daily_goal'] = {"date": str(date.today()), "goal": self.daily_goal}
+            self._save_data()
             self._update_goal_display()
 
     def _update_goal_display(self): self.goal_label.config(text=f"Today's Goal: {self.daily_goal}" if self.daily_goal else "Click to set your daily goal!")
@@ -527,11 +589,14 @@ class PomodoroTimer(tk.Toplevel):
         return f"{seconds // 60:02d}:{seconds % 60:02d}"
 
     def _sort_tasks(self):
-        tasks = [(self.task_listbox.get(i), self.task_listbox.itemcget(i, 'fg')) for i in range(self.task_listbox.size())]
+        """Sorts tasks in the listbox by priority and then recolors them."""
+        tasks = list(self.task_listbox.get(0, tk.END))
         priority_map = {f"[{p[0]}]": i for i, p in enumerate(PRIORITIES)}
-        tasks.sort(key=lambda item: priority_map.get(item[0][:3], 99))
+        tasks.sort(key=lambda item: priority_map.get(item[:3], 99))
         self.task_listbox.delete(0, tk.END)
-        for text, color in tasks: self.task_listbox.insert(tk.END, text); self.task_listbox.itemconfig(tk.END, {'fg': color})
+        for text in tasks:
+            self.task_listbox.insert(tk.END, text)
+        self._recolor_tasks()
 
     def _play_sound(self):
         sound_path = self.settings.get("sound_file_path")
@@ -545,13 +610,33 @@ class PomodoroTimer(tk.Toplevel):
         else: 
             self.bell()
 
-    def _load_settings(self):
-        settings = self._load_json(SETTINGS_FILE, default=DEFAULT_SETTINGS.copy())
-        if "pomodoro_mins" in settings: # Backward compatibility
+    def _load_data(self):
+        old_files = ["pomodoro_tasks.json", "pomodoro_settings.json", "daily_goal.json"]
+        if any(os.path.exists(f) for f in old_files) and not os.path.exists(DATA_FILE):
+            print("Old data files found. Migrating to single data file...")
+            data = DEFAULT_DATA.copy()
+            if os.path.exists(old_files[0]): data['tasks_data'] = self._load_json(old_files[0], DEFAULT_DATA['tasks_data'])
+            if os.path.exists(old_files[1]): data['settings'] = self._load_json(old_files[1], DEFAULT_DATA['settings'])
+            if os.path.exists(old_files[2]): data['daily_goal'] = self._load_json(old_files[2], DEFAULT_DATA['daily_goal'])
+            self._save_json(DATA_FILE, data)
+            for f in old_files:
+                try: os.remove(f)
+                except OSError: pass
+            return data
+
+        data = self._load_json(DATA_FILE, DEFAULT_DATA)
+        
+        for key, value in DEFAULT_DATA.items():
+            if key not in data:
+                data[key] = value
+
+        if "pomodoro_mins" in data['settings']:
+            settings = data['settings']
             settings["pomodoro_duration"] = settings.pop("pomodoro_mins", 25) * 60
             settings["short_break_duration"] = settings.pop("short_break_mins", 5) * 60
             settings["long_break_duration"] = settings.pop("long_break_mins", 15) * 60
-        return settings
+        
+        return data
 
     def _load_json(self, file_path, default=None):
         if os.path.exists(file_path):
@@ -560,18 +645,24 @@ class PomodoroTimer(tk.Toplevel):
             except (json.JSONDecodeError, IOError): pass
         return default if default is not None else {}
 
+    def _save_data(self):
+        self._save_json(DATA_FILE, self.app_data)
+
     def _save_json(self, file_path, data):
         try:
             with open(file_path, 'w') as f: json.dump(data, f, indent=4)
-        except IOError: pass
+        except IOError as e:
+            print(f"Error saving data to {file_path}: {e}")
 
-    def _on_closing(self): self._save_json(SETTINGS_FILE, self.settings); self._save_tasks(); self.destroy()
+    def _on_closing(self):
+        self._save_data()
+        self.destroy()
 
 # --- 6. Main Execution Block ---
 def main():
     """Creates and runs the Pomodoro Timer application."""
     root = tk.Tk()
-    root.withdraw() # Hide the root window
+    root.withdraw() 
     app = PomodoroTimer(root)
     app.mainloop()
 
