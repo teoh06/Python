@@ -109,7 +109,7 @@ class StudentAssistantApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Student Assistant Program")
-        self.geometry("960x680")
+        self.geometry("960x750")
         self.minsize(860, 600)
 
         # Colors
@@ -274,6 +274,23 @@ class StudentAssistantApp(tk.Tk):
         label = tk.Label(footer, text="Student Assistant • Built for focus and clarity",
                          bg=self.bg_body, fg="#94A3B8", font=("Helvetica Neue", 9))
         label.pack(anchor="center")
+        
+        # --- ADDED EXIT BUTTON ---
+        exit_button = tk.Button(footer, text="Exit Program", 
+                        command=self.destroy,
+                        bg="#FF0000",  # red background
+                        fg=self.fg_secondary,
+                        activebackground="#CC0000",  # darker red on hover
+                        activeforeground="white",
+                        relief="flat",
+                        cursor="hand2",
+                        font=("Helvetica Neue", 9, "bold"))
+        exit_button.pack(pady=(12, 0), ipady=5, ipadx=10)
+        
+        # Hover feedback for exit button
+        exit_button.bind("<Enter>", lambda e: exit_button.config(bg="#FF0000", fg="white"))
+        exit_button.bind("<Leave>", lambda e: exit_button.config(bg="#CC0000", fg=self.fg_secondary))
+        # --- END OF ADDITION ---
 
     def _center_window(self):
         self.update_idletasks()
@@ -302,5 +319,3 @@ class StudentAssistantApp(tk.Tk):
 if __name__ == "__main__":
     app = StudentAssistantApp()
     app.mainloop()
-
-
