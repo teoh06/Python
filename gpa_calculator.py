@@ -36,8 +36,8 @@ class EditCourseWindow(tk.Toplevel):
         
         # Grade
         ttk.Label(main_frame, text="Grade", style="TLabel").pack(fill="x", anchor="w")
-        self.grade_var = tk.StringVar(value=self.course_data['grade'])
-        self.grade_menu = ttk.Combobox(main_frame, textvariable=self.grade_var, values=list(self.app.GRADE_POINTS.keys()), state="readonly")
+        self.grade_menu = ttk.Combobox(main_frame, values=list(self.app.GRADE_POINTS.keys()), state="readonly")
+        self.grade_menu.set(self.course_data['grade'])
         self.grade_menu.pack(fill="x", pady=5, ipady=4)
         
         ttk.Button(main_frame, text="Save Changes", command=self.save_changes).pack(fill="x", pady=(20, 0), ipady=4)
@@ -45,7 +45,7 @@ class EditCourseWindow(tk.Toplevel):
         self.protocol("WM_DELETE_WINDOW", self.destroy); self.wait_window(self)
 
     def save_changes(self):
-        new_course, new_credits_str, new_grade = self.course_entry.get().strip(), self.credits_entry.get().strip(), self.grade_var.get()
+        new_course, new_credits_str, new_grade = self.course_entry.get().strip(), self.credits_entry.get().strip(), self.grade_menu.get().strip()
         if not all((new_course, new_credits_str, new_grade)):
             messagebox.showwarning("Input Error", "All fields are required.", parent=self); return
         try:
@@ -101,7 +101,7 @@ class App:
         ttk.Label(form, text="Add a Course", font=("Segoe UI", 14, "bold"), style="TLabel").pack(fill="x", pady=(0, 20))
         ttk.Label(form, text="Course Name", style="TLabel").pack(fill="x", anchor="w"); self.course_entry = ttk.Entry(form); self.course_entry.pack(fill="x", pady=(5, 15), ipady=4)
         ttk.Label(form, text="Credit Hours", style="TLabel").pack(fill="x", anchor="w"); self.credits_entry = ttk.Entry(form); self.credits_entry.pack(fill="x", pady=(5, 15), ipady=4)
-        ttk.Label(form, text="Grade", style="TLabel").pack(fill="x", anchor="w"); self.grade_var = tk.StringVar(value="A"); self.grade_menu = ttk.Combobox(form, textvariable=self.grade_var, values=list(self.GRADE_POINTS.keys()), state="readonly"); self.grade_menu.pack(fill="x", pady=5, ipady=4)
+        ttk.Label(form, text="Grade", style="TLabel").pack(fill="x", anchor="w"); self.grade_menu = ttk.Combobox(form, values=list(self.GRADE_POINTS.keys()), state="readonly"); self.grade_menu.set("A"); self.grade_menu.pack(fill="x", pady=5, ipady=4)
         ttk.Button(form, text="✚ Add Course", command=self.add_course).pack(fill="x", pady=(20, 0), ipady=4)
 
     def _create_right_panel_widgets(self):
@@ -122,7 +122,7 @@ class App:
         self.save_btn = ttk.Button(actions, text="💾 Save", command=self.save_courses); self.save_btn.pack(side="right")
     
     def add_course(self):
-        course, credits_str, grade = self.course_entry.get().strip(), self.credits_entry.get().strip(), self.grade_var.get()
+        course, credits_str, grade = self.course_entry.get().strip(), self.credits_entry.get().strip(), self.grade_menu.get().strip()
         if not all((course, credits_str, grade)): messagebox.showwarning("Input Error", "All fields are required.", parent=self.master); return
         try: credits = float(credits_str); assert credits > 0
         except(ValueError, AssertionError): messagebox.showwarning("Input Error", "Credit hours must be a positive number.", parent=self.master); return
@@ -190,7 +190,7 @@ class App:
         self.style.map("TButton", background=[('active', colors["button_hover"])])
         self.style.configure("TEntry", fieldbackground=colors["entry_bg"], foreground=colors["entry_fg"], bordercolor=colors["border"])
         self.master.option_add("*TCombobox*Listbox*Background", colors["entry_bg"]); self.master.option_add("*TCombobox*Listbox*Foreground", colors["entry_fg"])
-        self.style.map('TCombobox', fieldbackground=[('readonly', colors["entry_bg"])], foreground=[('readonly', colors["entry_fg"])])
+        self.style.map('TCombobox', fieldbackground=[('readonly', colors["entry_bg"])], foreground=[('readonly', colors["entry_fg"])] )
         self.style.configure("Treeview", background=colors["tree_bg"], fieldbackground=colors["tree_bg"], foreground=colors["tree_fg"])
         self.style.configure("Treeview.Heading", background=colors["tree_head_bg"], foreground=colors["tree_head_fg"])
         self.style.map("Treeview", background=[('selected', colors["tree_selected"])])
@@ -220,32 +220,8 @@ def main(initial_courses=None):
         return app.courses
     except Exception as e:
         print(f"An error occurred while running the application: {e}")
-        return initial_courses or [] # Return original data on error
-
-if __name__ == "__main__":
-    # This block demonstrates how to use the new `main` function.
-    # It will only run when this script is executed directly.
-
-    # --- EXAMPLE 1: Run the calculator empty ---
-    print("🚀 Launching the GPA Calculator (Run 1)...")
-    final_courses_run1 = main()
-    print("\n✅ Calculator closed. Final courses from Run 1:")
-    print(json.dumps(final_courses_run1, indent=2))
-    print("\n" + "="*60 + "\n")
-
-
-    # --- EXAMPLE 2: Run the calculator with pre-populated data ---
-    print("🚀 Launching the GPA Calculator with initial data (Run 2)...")
-    sample_data = [
-        {'course': 'Introduction to AI', 'credits': 3.0, 'grade': 'A'},
-        {'course': 'Software Engineering', 'credits': 4.0, 'grade': 'B+'},
-        {'course': 'Calculus II', 'credits': 4.0, 'grade': 'A-'}
-    ]
+        return initial_courses or []
     
-    # The 'updated_courses' variable will hold the data after the user
-    # adds, edits, or deletes courses and closes the window.
-    updated_courses = main(initial_courses=sample_data)
-
-    print("\n✅ Calculator closed. Final courses from Run 2:")
-    print(json.dumps(updated_courses, indent=2))
-
+if __name__ == "__main__":
+    main()
+    
