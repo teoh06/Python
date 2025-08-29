@@ -763,11 +763,11 @@ class HomeworkPlanner:
             # Validate date
             datetime.strptime(deadline, DATE_FORMAT)
         except ValueError:
-            messagebox.showerror("错误", "请输入有效的日期！", parent=self.root)
+            messagebox.showerror("Error", "Please enter a valid input！", parent=self.root)
             return
 
         if not subject or not title:
-            messagebox.showerror("错误", "科目和标题是必填项。", parent=self.root)
+            messagebox.showerror("Error", "Subject and Title are required.", parent=self.root)
             return
 
         task_data = {
