@@ -224,12 +224,19 @@ class StudentAssistantApp(tk.Tk):
         self.tip_label.pack(side="left", padx=8)
         
     def _update_tip(self):
+        if not self.winfo_exists():
+            return  # Window already destroyed, stop scheduling
         current_tip = self.tip_label.cget("text")
         new_tip = random.choice(self.tips)
         while new_tip == current_tip and len(self.tips) > 1:
             new_tip = random.choice(self.tips)
         self.tip_label.config(text=new_tip)
         self.after(7000, self._update_tip)
+        self.protocol("WM_DELETE_WINDOW", self._on_closing)
+        
+    def _on_closing(self):
+        self.after_cancel(self._update_tip)  # cancel scheduled task
+        self.destroy()
 
     def _build_cards(self):
         grid_wrap = tk.Frame(self.background_canvas, bg=self.bg_grad_start)
