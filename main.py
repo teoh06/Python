@@ -286,7 +286,7 @@ class StudentAssistantApp(tk.Tk):
         random_action()
 
     def open_pomodoro(self):
-        pomodoro_timer.main()
+        pomodoro_timer.main(self)
 
     def open_calculator(self):
         gpa_calculator.main()

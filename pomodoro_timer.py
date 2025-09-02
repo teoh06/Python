@@ -3,11 +3,11 @@
 # Focus sessions with breaks, task tracking, and customizable settings
 
 import tkinter as tk
-from tkinter import ttk, messagebox
-import sqlite3
+from tkinter import ttk, messagebox, filedialog
 import os
 import json
-from datetime import datetime, timedelta
+import random
+from datetime import datetime, timedelta, date
 
 # --- 2. Constants ---
 DATA_DIR = "data"
@@ -190,15 +190,18 @@ class SettingsWindow(CustomDialog):
 class TaskDescriptionDialog(CustomDialog):
     # Edit or add description for a task by double clicking the tasks
     def __init__(self, parent, task_text, current_description, theme):
-        super().__init__(parent, "Task Description", theme, "450x300")
+        super().__init__(parent, "Task Description", theme, "450x350")
         frame = tk.Frame(self, bg=self.theme["BACKGROUND"], padx=15, pady=15); frame.pack(fill="both", expand=True)
         tk.Label(frame, text=f"Description for: {task_text}", bg=self.theme["BACKGROUND"], fg=self.theme["FOREGROUND"], font=(FONT_FAMILY, 12, "bold")).pack(anchor="w", pady=(0, 10))
         text_frame = tk.Frame(frame, bg=self.theme["BACKGROUND"]); text_frame.pack(fill="both", expand=True)
-        self.desc_text = tk.Text(text_frame, wrap="word", bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat", insertbackground=self.theme["FOREGROUND"], font=(FONT_FAMILY, 11))
+        self.desc_text = tk.Text(text_frame, wrap="word", height=8, width=50, bg=self.theme["BUTTON"], fg=self.theme["FOREGROUND"], relief="flat", insertbackground=self.theme["FOREGROUND"], font=(FONT_FAMILY, 11))
         self.desc_text.pack(side="left", fill="both", expand=True); self.desc_text.insert("1.0", current_description)
         scrollbar = tk.Scrollbar(text_frame, command=self.desc_text.yview, bg=self.theme["BACKGROUND"], troughcolor=self.theme["BUTTON"]); scrollbar.pack(side="right", fill="y")
         self.desc_text.config(yscrollcommand=scrollbar.set)
         self._create_buttons(); self.desc_text.focus_set()
+        btn_frame = tk.Frame(self, bg=self.theme["BACKGROUND"])
+        btn_frame.pack(side="bottom", pady=10)
+
 
     # Save description on save button
     def _on_save(self): self.result = self.desc_text.get("1.0", "end-1c").strip(); self.destroy()
@@ -578,7 +581,8 @@ class PomodoroTimer(tk.Toplevel):
     def _load_tasks_to_listbox(self):
         for task in self.task_data.get('tasks', []):
             self.task_listbox.insert(tk.END, task['text'])
-        self._recolor_tasks()
+            if "color" in task:
+                self.task_listbox.itemconfig(tk.END, {'fg': task['color']})
         self._sort_tasks()
 
     def _recolor_tasks(self):
@@ -691,14 +695,22 @@ class PomodoroTimer(tk.Toplevel):
     def _on_closing(self):
         self._save_data()
         self.destroy()
+        
+        # If running standalone, quit the hidden root
+        if isinstance(self.master, tk.Tk) and not self.master.winfo_viewable():
+            self.master.quit()
 
 # --- 6. Main Execution Block ---
-def main():
+def main(master=None):
     """Creates and runs the Pomodoro Timer application."""
-    root = tk.Tk() # Create a hidden root window
-    root.withdraw() # Hide the root window
-    app = PomodoroTimer(root) # Create the main application window
-    app.mainloop() # Start the Tkinter event loop
+    if master is None:
+        root = tk.Tk() # Create a hidden root window
+        root.withdraw() # Hide the root window
+        app = PomodoroTimer(root) # Create the main application window
+        app.mainloop() # Start the Tkinter event loop
+    else:
+        app = PomodoroTimer(master)
+        return app # Return the app instance for embedding in other applications
 
 if __name__ == "__main__":
     main()
