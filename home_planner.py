@@ -232,17 +232,28 @@ class CalendarView(tk.Toplevel):
             command=self._next_month
         ).pack(side="right")
 
+        # 修改网格布局配置
         grid = tk.Frame(outer, bg=self.theme["BG_PRIMARY"])
         grid.pack(pady=(8, 8))
+        
+        # 确保所有列宽度相等
+        for i in range(7):
+            grid.grid_columnconfigure(i, weight=1, minsize=120)
 
         # weekday headers
         for c, wd in enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
             tk.Label(grid, text=wd, width=12, bg=self.theme["BG_PRIMARY"],
                      fg=self.theme["TEXT_SECONDARY"],
-                     font=("Segoe UI", 10, "bold")).grid(row=0, column=c, padx=2, pady=4)
+                     font=("Segoe UI", 10, "bold")).grid(row=0, column=c, padx=2, pady=4, sticky="nsew")
 
         self.cells_frame = tk.Frame(grid, bg=self.theme["BG_PRIMARY"])
         self.cells_frame.grid(row=1, column=0, columnspan=7)
+
+        # 确保单元格行高一致
+        for i in range(6):  # 日历最多6行
+            self.cells_frame.grid_rowconfigure(i, minsize=70)
+        for i in range(7):  # 7列
+            self.cells_frame.grid_columnconfigure(i, minsize=120)
 
         # task list area
         self.list_label = tk.Label(outer, text="Tasks on selected day",
@@ -266,8 +277,10 @@ class CalendarView(tk.Toplevel):
             for c, d in enumerate(week):
                 frame = tk.Frame(self.cells_frame, bg=self.theme["BG_SECONDARY"], bd=1, relief="solid")
                 frame.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
-                frame.grid_propagate(False)
-                frame.config(width=120, height=70)
+                
+                # 移除这两行，让单元格跟随grid配置
+                # frame.grid_propagate(False)
+                # frame.config(width=120, height=70)
 
                 if d == 0:
                     continue
