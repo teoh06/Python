@@ -417,7 +417,7 @@ class ReminderApp:
         
         window = tk.Toplevel(self.root)
         window.title("Edit Reminder")
-        window.geometry("400x300")
+        window.geometry("400x400")
         window.configure(bg=COLORS["bg"])
         
         tk.Label(window, text="Edit Reminder", font=("Arial", 16, "bold"),
