@@ -256,6 +256,7 @@ class PomodoroTimer(tk.Toplevel):
 
         self.grid_rowconfigure(0, weight=1); self.grid_columnconfigure(0, weight=1)
         self.main_frame = tk.Frame(self); self.main_frame.grid(row=0, column=0)
+        self.main_frame.bind("<Button-1>", self._clear_focus)
         self.all_widgets.append(self.main_frame)
 
         self._setup_ui()
@@ -267,11 +268,23 @@ class PomodoroTimer(tk.Toplevel):
         self._create_menu()
         self.goal_label = self._create_label("Click to set your daily goal!", font=(FONT_FAMILY, 12, "italic"), fg_theme_key="ACCENT", wraplength=480, pady=(0, 5))
         self.goal_label.bind("<Button-1>", lambda e: self.set_daily_goal())
-        self.session_frame = tk.Frame(self.main_frame, relief='groove', borderwidth=2); self.session_frame.pack(pady=5, fill='x'); self.all_widgets.append(self.session_frame)
+        
+        self.session_frame = tk.Frame(self.main_frame, relief='groove', borderwidth=2)
+        self.session_frame.pack(pady=5, fill='x')
+        self.all_widgets.append(self.session_frame)
+        self.session_frame.bind("<Button-1>", self._clear_focus) 
+
         self.session_label = self._create_label("Sessions Completed: 0", parent=self.session_frame, font=(FONT_FAMILY, 12, "bold"), bg_theme_key="SESSION_BG", pady=10)
+        self.session_label.bind("<Button-1>", self._clear_focus) 
+        
         self._create_mode_buttons()
+        
         self.timer_label = self._create_label(self._format_time(self.time_left), font=(FONT_FAMILY, 60, "bold"), pady=20)
+        self.timer_label.bind("<Button-1>", self._clear_focus) 
+        
         self.quote_label = self._create_label("Let's get started!", font=(FONT_FAMILY, 11, "italic"), wraplength=480, pady=(0, 10))
+        self.quote_label.bind("<Button-1>", self._clear_focus) 
+
         self._create_control_buttons()
         self._create_task_manager()
         self._apply_theme(animated=False)
@@ -339,7 +352,7 @@ class PomodoroTimer(tk.Toplevel):
 
     # Shortcut key bindings for quick access to functions
     def _bind_shortcuts(self):
-        self.bind("<space>", lambda e: self.toggle_start_pause())
+        self.bind("<space>", lambda e: self.toggle_start_pause() if self.focus_get() != self.task_entry else None)
         self.bind("<r>", lambda e: self.reset_timer())
         self.bind("<Control-p>", lambda e: self.switch_mode(MODES["POMODORO"]))
         self.bind("<Control-s>", lambda e: self.switch_mode(MODES["SHORT_BREAK"]))
@@ -350,6 +363,10 @@ class PomodoroTimer(tk.Toplevel):
         self.bind("<Control-d>", lambda e: self.delete_all_tasks())
         self.bind("<Control-q>", lambda e: self._on_closing())
 
+    def _clear_focus(self, event):
+        """Removes focus from any widget by setting it to the main window."""
+        self.focus_set()
+        
     # Toggle between light and dark themes
     def toggle_theme(self):
         self.theme_name = "light" if self.theme_name == "dark" else "dark"
