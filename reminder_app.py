@@ -98,7 +98,7 @@ def toggle_reminder(reminder_id, enabled):
     execute_db_query("UPDATE reminders SET enabled=?, last_modified=datetime('now') WHERE id=?", 
                     (1 if enabled else 0, reminder_id))
 
-def get_setting(key, default=None):
+def get_sound(key, default=None):
     result = execute_db_query("SELECT value FROM settings WHERE key=?", (key,), fetchone=True)
     return result[0] if result else default
 
@@ -222,7 +222,7 @@ class ReminderApp:
         self.root.bind("<Control-n>", lambda e: self.add_reminder_window())
         self.root.bind("<Control-e>", lambda e: self.edit_selected())
         self.root.bind("<Delete>", lambda e: self.delete_selected())
-        self.root.bind("<space>", lambda e: self.toggle_selected())
+        self.root.bind("<space>", lambda e: self.changestatus_selected())
         self.root.bind("<Control-a>", lambda e: self.enable_all())
         self.root.bind("<Control-d>", lambda e: self.disable_all())
         self.root.bind("<F5>", lambda e: self.load_reminders())
@@ -238,7 +238,7 @@ class ReminderApp:
         self.status_menu = tk.Menu(self.context_menu, tearoff=0)
         self.status_menu.add_command(label="✅ Set Active", command=lambda: self.quick_change_status(True))
         self.status_menu.add_command(label="❌ Set Disabled", command=lambda: self.quick_change_status(False))
-        self.status_menu.add_command(label="🔄 Toggle Status", command=self.toggle_selected)
+        self.status_menu.add_command(label="🔄 Toggle Status", command=self.changestatus_selected)
         self.context_menu.add_cascade(label="📊 Status", menu=self.status_menu)
         
         self.recurrence_menu = tk.Menu(self.context_menu, tearoff=0)
@@ -264,7 +264,7 @@ class ReminderApp:
                              padx=15, pady=5)
         delete_btn.pack(side=tk.LEFT, padx=5)
         
-        toggle_btn = tk.Button(action_frame, text="Toggle Status", command=self.toggle_selected,
+        toggle_btn = tk.Button(action_frame, text="Toggle Status", command=self.changestatus_selected,
                              bg=COLORS["success"], fg="white", font=("Arial", 10),
                              padx=15, pady=5)
         toggle_btn.pack(side=tk.LEFT, padx=5)
@@ -402,9 +402,11 @@ class ReminderApp:
 
     def edit_selected(self):
         selection = self.tree.selection()
+        reminders = get_reminders()
         if not selection:
             messagebox.showwarning("Warning", "Please select a reminder to edit!")
             return
+        
         
         item = self.tree.item(selection[0])
         reminder_id = item['values'][0]
@@ -491,7 +493,7 @@ class ReminderApp:
             self.load_reminders()
             messagebox.showinfo("Success", "Reminder deleted successfully!")
 
-    def toggle_selected(self):
+    def changestatus_selected(self):
         selection = self.tree.selection()
         if not selection:
             messagebox.showwarning("Warning", "Please select a reminder to toggle!")
@@ -549,7 +551,7 @@ class ReminderApp:
         
         if column == "#6":  # Status column
             self.tree.selection_set(item)
-            self.toggle_selected()
+            self.changestatus_selected()
             return "break"
         
         elif column == "#5":  # Recurrence column
@@ -809,7 +811,7 @@ class ReminderApp:
         tk.Label(window, text="Sound Settings", font=("Arial", 16, "bold"),
                 bg=COLORS["bg"], fg=COLORS["dark"]).pack(pady=10)
         
-        current_sound = get_setting("sound_file")
+        current_sound = get_sound("sound_file")
         sound_label = tk.Label(window, text=f"Current: {current_sound or 'Default system sound'}",
                               bg=COLORS["bg"], fg=COLORS["dark"], wraplength=350)
         sound_label.pack(pady=5)
@@ -862,7 +864,7 @@ class ReminderApp:
 
     def play_test_sound(self):
         self.stop_sound()
-        sound_file = get_setting("sound_file")
+        sound_file = get_sound("sound_file")
         if sound_file and not os.path.isabs(sound_file):
             sound_file = os.path.join(DATA_DIR, sound_file)
 
@@ -897,7 +899,7 @@ class ReminderApp:
 
     def start_sound_loop(self):
         self.stop_sound()
-        sound_file = get_setting("sound_file")
+        sound_file = get_sound("sound_file")
         if sound_file and not os.path.isabs(sound_file):
             sound_file = os.path.join(DATA_DIR, sound_file)
 
