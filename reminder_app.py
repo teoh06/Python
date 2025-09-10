@@ -115,7 +115,7 @@ class ReminderApp:
     def __init__(self, master):
         self.master = master
         self.root = tk.Toplevel(master)
-        self.root.title("Reminder App")
+        self.root.title("Simple Reminder App")
         self.root.geometry("1000x700")
         self.root.configure(bg=COLORS["bg"])
         
@@ -145,7 +145,7 @@ class ReminderApp:
         header = tk.Frame(main_frame, bg=COLORS["bg"])
         header.pack(fill=tk.X, pady=(0, 20))
         
-        tk.Label(header, text="📅 Reminder App", font=("Arial", 24, "bold"), 
+        tk.Label(header, text="📅 Simple Reminder App", font=("Arial", 24, "bold"), 
                 bg=COLORS["bg"], fg=COLORS["dark"]).pack(side=tk.LEFT)
         
         stats_frame = tk.Frame(header, bg=COLORS["bg"])
@@ -928,7 +928,7 @@ class ReminderApp:
 
     def show_help(self):
         help_window = tk.Toplevel(self.root)
-        help_window.title("📚 Reminder App - Help")
+        help_window.title("📚 Simple Reminder App - Help")
         help_window.geometry("600x500")
         help_window.configure(bg=COLORS["bg"])
         
@@ -942,7 +942,7 @@ class ReminderApp:
         
         header_frame = tk.Frame(help_window, bg=COLORS["accent"], height=50)
         header_frame.pack(fill=tk.X)
-        tk.Label(header_frame, text="📚 Reminder App Help", font=("Arial", 18, "bold"),
+        tk.Label(header_frame, text="📚 Simple Reminder App Help", font=("Arial", 18, "bold"),
                 bg=COLORS["accent"], fg="white").pack(pady=12)
         
         canvas = tk.Canvas(help_window, bg=COLORS["bg"])
