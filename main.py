@@ -250,7 +250,7 @@ class StudentAssistantApp(tk.Tk):
         cards_data = [
             {"icon": "⏱️", "title": "Pomodoro Timer", "subtitle": "Stay focused with 25/5 cycles", "desc": "Use focused sprints with short breaks to boost productivity.", "btn": "Open Pomodoro →", "accent": self.accent_pink, "cmd": self.open_pomodoro},
             {"icon": "📊", "title": "GPA Calculator", "subtitle": "Quickly compute your GPA", "desc": "Add courses and credits to see your overall performance.", "btn": "Open Calculator →", "accent": self.accent_emerald, "cmd": self.open_calculator},
-            {"icon": "🗓️", "title": "Reminder App", "subtitle": "Never miss important tasks", "desc": "Set simple reminders to stay on top of deadlines.", "btn": "Open Reminders →", "accent": self.accent_sky, "cmd": self.open_reminder},
+            {"icon": "🗓️", "title": "Simple Reminder App", "subtitle": "Never miss important tasks", "desc": "Set simple reminders to stay on top of deadlines.", "btn": "Open Reminders →", "accent": self.accent_sky, "cmd": self.open_reminder},
             {"icon": "📚", "title": "Homework Planner", "subtitle": "Organize your assignments", "desc": "Track subjects, titles, and deadlines to stay on top of your work.", "btn": "Open Planner →", "accent": self.accent_indigo, "cmd": self.open_homework_planner}
         ]
         positions = [(0, 0), (0, 1), (1, 0), (1, 1)]
