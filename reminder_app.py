@@ -113,8 +113,7 @@ def clear_setting(key):
 # =========================
 class ReminderApp:
     def __init__(self, master):
-        self.master = master
-        self.root = tk.Toplevel(master)
+        self.root = master
         self.root.title("Simple Reminder App")
         self.root.geometry("1000x700")
         self.root.configure(bg=COLORS["bg"])
@@ -1052,11 +1051,13 @@ class ReminderApp:
         help_window.bind("<Escape>", lambda e: help_window.destroy())
         help_window.focus_set()
 
-def main():
-    root = tk.Tk()
-    root.withdraw()
-    app = ReminderApp(root)
-    root.mainloop()
+def main(parent=None):
+    win = tk.Toplevel(parent)     
+    app = ReminderApp(win)        
+    return win                   
 
 if __name__ == "__main__":
-    main()
+    # only run a standalone app if executed directly
+    root = tk.Tk()
+    app = ReminderApp(root)
+    root.mainloop()
