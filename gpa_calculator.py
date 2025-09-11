@@ -17,8 +17,8 @@ class EditCourseWindow(tk.Toplevel):
         self.transient(app.master)
         self.grab_set()
         self.title("Edit Course")
-        self.geometry("450x400")
-        self.resizable(False, False)
+        self.geometry("1000x1500")
+        self.resizable(True, True)
         
         colors = self.app.themes[self.app.current_theme]
         self.configure(bg=colors["frame_bg"])
@@ -120,9 +120,11 @@ class EditCourseWindow(tk.Toplevel):
         if not all((new_course, new_credits_str, new_grade)):
             messagebox.showwarning("Input Error", "All fields are required.", parent=self); return
         try:
-            new_credits = float(new_credits_str); assert new_credits > 0
-        except (ValueError, AssertionError):
-            messagebox.showwarning("Input Error", "Credit hours must be a positive number.", parent=self); return
+            new_credits = float(new_credits_str)
+            if new_credits <= 0 or new_credits > 4:
+                raise ValueError()
+        except ValueError:
+            messagebox.showwarning("Input Error", "Credit hours must be a positive number or not greater than 4.", parent=self); return
         
         self.course_data.update({'course': new_course, 'credits': new_credits, 'grade': new_grade})
         self.destroy()
@@ -441,10 +443,10 @@ class App:
             
         try:
             credits = float(credits_str)
-            if credits <= 0:
+            if credits <= 0 or credits > 4:
                 raise ValueError()
         except ValueError:
-            messagebox.showwarning("Input Error", "Credit hours must be a positive number.", parent=self.master)
+            messagebox.showwarning("Input Error", "Credit hours must be a positive number or not greater than 4.", parent=self.master)
             return
             
         self.courses.append({'course': course, 'credits': credits, 'grade': grade})
@@ -479,6 +481,7 @@ class App:
         if not (filename := simpledialog.askstring("Save Courses", "Enter filename:", parent=self.master)): return
         if not filename.endswith('.csv'): filename += '.csv'
         # Modified: Prepend 'data/' to the filename
+        
         filepath = os.path.join("data", filename)
         try:
             with open(filepath, 'w', newline='', encoding='utf-8') as f:
