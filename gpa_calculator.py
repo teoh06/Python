@@ -513,8 +513,7 @@ class App:
             self.courses_tree.delete(item)
             
         for i, c in enumerate(self.courses): 
-            # Add alternating row colors for better readability
-            tags = (id(c), 'evenrow' if i % 2 == 0 else 'oddrow')
+            tags = (str(id(c)), 'evenrow' if i % 2 == 0 else 'oddrow')
             self.courses_tree.insert('', tk.END, 
                                    values=(c['course'], c['credits'], c['grade']), 
                                    tags=tags)
@@ -624,7 +623,7 @@ class App:
         with open(config_path, 'w') as f: json.dump({"theme": self.current_theme}, f)
         self._apply_theme()
 
-def main(initial_courses=None):
+def main(parent, initial_courses=None):
     """
     Launches the GPA Calculator application.
 
@@ -637,14 +636,17 @@ def main(initial_courses=None):
         list: The final list of course dictionaries after the application window is closed.
     """
     try:
-        root = tk.Tk()
-        app = App(root, initial_courses=initial_courses)
-        root.mainloop()
-        return app.courses
+        window = tk.Toplevel(parent)
+        app = App(window, initial_courses=initial_courses)
+        return window
     except Exception as e:
-        print(f"An error occurred while running the application: {e}")
-        return initial_courses or []
-    
+        messagebox.showerror("Application Error", f"Failed to launch GPA Calculator: {e}", parent=parent)
+        return None
+
 if __name__ == "__main__":
-    main()
-    
+    # This block is kept for standalone testing of the module.
+    root = tk.Tk()
+    # Hide the blank root window when running standalone.
+    root.withdraw()
+    main(root)
+    root.mainloop()
