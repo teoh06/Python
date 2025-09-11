@@ -623,30 +623,38 @@ class App:
         with open(config_path, 'w') as f: json.dump({"theme": self.current_theme}, f)
         self._apply_theme()
 
-def main(parent, initial_courses=None):
+def main(parent=None, initial_courses=None):
     """
     Launches the GPA Calculator application.
 
     Args:
+        parent: Parent Tkinter window. If None, app runs standalone with its own root.
         initial_courses (list, optional): A list of course dictionaries to pre-populate the calculator.
                                           Each dictionary should have 'course', 'credits', and 'grade' keys.
                                           Defaults to None.
 
     Returns:
-        list: The final list of course dictionaries after the application window is closed.
+        tk.Tk or tk.Toplevel: The window instance for this application.
     """
     try:
-        window = tk.Toplevel(parent)
-        app = App(window, initial_courses=initial_courses)
-        return window
+        if parent is None:
+            # Standalone mode
+            window = tk.Tk()
+            app = App(window, initial_courses=initial_courses)
+            window.mainloop()
+            return window
+        else:
+            # Launched from StudentAssistantApp
+            window = tk.Toplevel(parent)
+            app = App(window, initial_courses=initial_courses)
+            return window
     except Exception as e:
-        messagebox.showerror("Application Error", f"Failed to launch GPA Calculator: {e}", parent=parent)
+        if parent is not None:
+            messagebox.showerror("Application Error", f"Failed to launch GPA Calculator: {e}", parent=parent)
+        else:
+            messagebox.showerror("Application Error", f"Failed to launch GPA Calculator: {e}")
         return None
 
+
 if __name__ == "__main__":
-    # This block is kept for standalone testing of the module.
-    root = tk.Tk()
-    # Hide the blank root window when running standalone.
-    root.withdraw()
-    main(root)
-    root.mainloop()
+    main()
