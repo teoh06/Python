@@ -124,6 +124,10 @@ class StudentAssistantApp(tk.Tk):
         self.title("Student Assistant Program")
         self.geometry("960x780")
         self.minsize(860, 600)
+        self.pomodoro_win = None
+        self.calculator_win = None
+        self.reminder_win = None
+        self.planner_win = None
 
         self.bg_grad_start = "#0B1220"
         self.bg_grad_end = "#030712"
@@ -293,17 +297,65 @@ class StudentAssistantApp(tk.Tk):
         random_action()
 
     def open_pomodoro(self):
-        pomodoro_timer.main(self)
+        if self.pomodoro_win is None or not self.pomodoro_win.winfo_exists():
+            self.pomodoro_win = pomodoro_timer.main(self)
+            self.pomodoro_win.protocol(
+                "WM_DELETE_WINDOW",
+                lambda: self._on_close_pomodoro()
+            )
+        else:
+            self.pomodoro_win.lift()
+
+    def _on_close_pomodoro(self):
+        self.pomodoro_win.destroy()
+        self.pomodoro_win = None
+
 
     def open_calculator(self):
-        gpa_calculator.main()
+        if self.calculator_win is None or not self.calculator_win.winfo_exists():
+            self.calculator_win = gpa_calculator.main(self)
+            self.calculator_win.protocol(
+                "WM_DELETE_WINDOW",
+                lambda: self._on_close_calculator()
+            )
+        else:
+            self.calculator_win.lift()
+
+    def _on_close_calculator(self):
+        self.calculator_win.destroy()
+        self.calculator_win = None
+
 
     def open_reminder(self):
-        reminder_app.main()
+        if self.reminder_win is None or not self.reminder_win.winfo_exists():
+            self.reminder_win = reminder_app.main(self)
+            self.reminder_win.protocol(
+                "WM_DELETE_WINDOW",
+                lambda: self._on_close_reminder()
+            )
+        else:
+            self.reminder_win.lift()
 
-    # --- MODIFIED: Added method to launch the homework planner ---
+    def _on_close_reminder(self):
+        self.reminder_win.destroy()
+        self.reminder_win = None
+
+
     def open_homework_planner(self):
-        home_planner.main()
+        if self.planner_win is None or not self.planner_win.winfo_exists():
+            self.planner_win = home_planner.main(self)
+            self.planner_win.protocol(
+                "WM_DELETE_WINDOW",
+                lambda: self._on_close_homework_planner()
+            )
+        else:
+            self.planner_win.lift()
+
+    def _on_close_homework_planner(self):
+        self.planner_win.destroy()
+        self.planner_win = None
+
+
 
 if __name__ == "__main__":
     app = StudentAssistantApp()
