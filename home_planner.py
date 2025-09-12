@@ -398,26 +398,6 @@ class HomeworkPlanner:
         self.root.geometry("1000x720")
         self.root.minsize(850, 600)
 
-        # --- Themes ---
-        dark_theme = {
-            "BG_PRIMARY": "#0D1117",
-            "BG_SECONDARY": "#161B22",
-            "BORDER_COLOR": "#30363D",
-            "TEXT_PRIMARY": "#C9D1D9",
-            "TEXT_SECONDARY": "#9E8B96",
-            "ACCENT_BLUE": "#388BFD",
-            "ACCENT_BLUE_HOVER": "#58A6FF",
-            "ACCENT_RED": "#DA3633",
-            "ACCENT_RED_HOVER": "#F85149",
-            "ACCENT_GREEN": "#2EA043",
-            "ACCENT_GREEN_HOVER": "#3FB950",
-            "ACCENT_AMBER": "#D29922",
-            "ACCENT_AMBER_HOVER": "#E7B138",
-            "ACCENT_GREY": "#21262D",
-            "ACCENT_GREY_HOVER": "#30363D",
-            "STRIPE_BG": "#1A202A",
-        }
-
         light_theme = {
             "BG_PRIMARY": "#FFFFFF",
             "BG_SECONDARY": "#F6F8FA",
@@ -436,13 +416,8 @@ class HomeworkPlanner:
             "ACCENT_GREY_HOVER": "#FF0095",
             "STRIPE_BG": "#FFFFFF",
         }
-
-        # Select theme based on time of day
-        hour = datetime.now().hour
-        if 6 <= hour < 18:
-            self.theme = light_theme
-        else:
-            self.theme = dark_theme
+   
+        self.theme = light_theme
 
         self.FONT_LABEL = ("Segoe UI", 10)
         self.FONT_INPUT = ("Segoe UI", 10)
