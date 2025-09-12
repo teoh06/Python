@@ -118,6 +118,9 @@ class ReminderApp:
         self.root.geometry("1000x700")
         self.root.configure(bg=COLORS["bg"])
         
+        self.last_click_time = 0
+        self.last_click_item = None
+            
         # Initialize pygame mixer if available
         self.pygame_initialized = False
         if HAS_PYGAME:
@@ -212,18 +215,21 @@ class ReminderApp:
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        self.tree.bind("<Double-1>", self.edit_reminder)
         self.tree.bind("<Button-1>", self.on_tree_click)
         self.tree.bind("<Button-3>", self.show_context_menu)
         self.tree.bind("<Motion>", self.on_tree_hover)
         self.tree.bind("<Leave>", self.on_tree_leave)
-        
+        self.root.bind("<F2>", lambda e: self.view_selected())
         self.root.bind("<Control-n>", lambda e: self.add_reminder_window())
+        self.root.bind("<Control-N>", lambda e: self.add_reminder_window())
         self.root.bind("<Control-e>", lambda e: self.edit_selected())
+        self.root.bind("<Control-E>", lambda e: self.edit_selected())
         self.root.bind("<Delete>", lambda e: self.delete_selected())
         self.root.bind("<space>", lambda e: self.changestatus_selected())
         self.root.bind("<Control-a>", lambda e: self.enable_all())
+        self.root.bind("<Control-A>", lambda e: self.enable_all())
         self.root.bind("<Control-d>", lambda e: self.disable_all())
+        self.root.bind("<Control-D>", lambda e: self.disable_all())
         self.root.bind("<F5>", lambda e: self.load_reminders())
         self.root.bind("<F1>", lambda e: self.show_help())
         self.root.bind("<Escape>", lambda e: self.tree.selection_remove(*self.tree.selection()))
@@ -231,6 +237,7 @@ class ReminderApp:
         self.tree.focus_set()
         
         self.context_menu = tk.Menu(self.root, tearoff=0)
+        self.context_menu.add_command(label="👁️ View Details", command=self.view_selected)
         self.context_menu.add_command(label="📝 Edit Reminder", command=self.edit_selected)
         self.context_menu.add_separator()
         
@@ -252,7 +259,11 @@ class ReminderApp:
         
         action_frame = tk.Frame(list_frame, bg=COLORS["bg"], pady=10)
         action_frame.pack(fill=tk.X)
-        
+        view_btn = tk.Button(action_frame, text="View Details", command=self.view_selected,
+                   bg="#6f42c1", fg="white", font=("Arial", 10),
+                   padx=15, pady=5)
+        view_btn.pack(side=tk.LEFT, padx=5)
+                
         edit_btn = tk.Button(action_frame, text="Edit", command=self.edit_selected,
                            bg=COLORS["warning"], fg=COLORS["dark"], font=("Arial", 10),
                            padx=15, pady=5)
@@ -288,6 +299,91 @@ class ReminderApp:
                                padx=15, pady=5)
         settings_btn.pack(side=tk.RIGHT, padx=5)
 
+    def show_reminder_details(self, reminder_id):
+        """Show detailed view of a reminder with edit button"""
+        reminders = get_reminders()
+        reminder = next((r for r in reminders if r[0] == reminder_id), None)
+        
+        if not reminder:
+            return
+        
+        window = tk.Toplevel(self.root)
+        window.title("View Reminder Details")
+        window.geometry("600x500")
+        window.configure(bg=COLORS["bg"])
+        window.resizable(False, False)
+        
+        # Make window modal
+        window.transient(self.root)
+        window.grab_set()
+        
+        # Center the window
+        window.update_idletasks()
+        x = (window.winfo_screenwidth() // 2) - (window.winfo_width() // 2)
+        y = (window.winfo_screenheight() // 2) - (window.winfo_height() // 2)
+        window.geometry(f"+{x}+{y}")
+        
+        # Header
+        header = tk.Frame(window, bg=COLORS["accent"], height=50)
+        header.pack(fill=tk.X)
+        tk.Label(header, text="📋 Reminder Details", font=("Arial", 16, "bold"),
+                bg=COLORS["accent"], fg="white").pack(pady=12)
+        
+        # Content
+        content = tk.Frame(window, bg=COLORS["bg"], padx=20, pady=20)
+        content.pack(fill=tk.BOTH, expand=True)
+        
+        # Details
+        details = [
+            ("ID:", reminder[0]),
+            ("Title:", reminder[1]),
+            ("Message:", reminder[2] or "No message"),
+            ("Due Time:", reminder[3]),
+            ("Recurrence:", reminder[4] or "None"),
+            ("Status:", "Active" if reminder[5] else "Inactive"),
+            ("Created:", reminder[6][:16] if reminder[6] else "N/A"),
+            ("Last Modified:", reminder[7][:16] if reminder[7] else "N/A")
+        ]
+        
+        for label, value in details:
+            row = tk.Frame(content, bg=COLORS["bg"])
+            row.pack(fill=tk.X, pady=5)
+            tk.Label(row, text=label, font=("Arial", 10, "bold"), 
+                    bg=COLORS["bg"], fg=COLORS["dark"], width=15, anchor=tk.W).pack(side=tk.LEFT)
+            tk.Label(row, text=value, font=("Arial", 10), 
+                    bg=COLORS["bg"], fg=COLORS["dark"], wraplength=350, justify=tk.LEFT).pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Button frame
+        button_frame = tk.Frame(content, bg=COLORS["bg"])
+        button_frame.pack(pady=20)
+        
+        # Edit button
+        edit_btn = tk.Button(button_frame, text="✏️ Edit Reminder", 
+                            command=lambda: self.edit_reminder_from_details(reminder_id, window),
+                            bg=COLORS["warning"], fg=COLORS["dark"], font=("Arial", 12, "bold"),
+                            padx=15, pady=8)
+        edit_btn.pack(side=tk.LEFT, padx=10)
+        
+        # Close button
+        close_btn = tk.Button(button_frame, text="Close", command=window.destroy,
+                            bg=COLORS["accent"], fg="white", font=("Arial", 12),
+                            padx=20, pady=8)
+        close_btn.pack(side=tk.LEFT, padx=10)
+        
+        window.focus_set()
+        window.bind("<Escape>", lambda e: window.destroy())
+    
+    def view_selected(self):
+        """View details of selected reminder"""
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showwarning("Warning", "Please select a reminder to view!")
+            return
+        
+        item = self.tree.item(selection[0])
+        reminder_id = item['values'][0]
+        self.show_reminder_details(reminder_id)
+    
     def load_reminders(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -388,6 +484,82 @@ class ReminderApp:
                  bg=COLORS["success"], fg="white", font=("Arial", 10, "bold"),
                  padx=20, pady=5).pack(pady=10)
 
+    def edit_reminder_from_details(self, reminder_id, details_window):
+        """Close details window and open edit window for the reminder"""
+        details_window.destroy()
+        self.edit_reminder_by_id(reminder_id)
+
+    def edit_reminder_by_id(self, reminder_id):
+        """Edit a reminder by its ID"""
+        reminders = get_reminders()
+        reminder = next((r for r in reminders if r[0] == reminder_id), None)
+        
+        if not reminder:
+            return
+        
+        window = tk.Toplevel(self.root)
+        window.title("Edit Reminder")
+        window.geometry("400x400")
+        window.configure(bg=COLORS["bg"])
+        
+        tk.Label(window, text="Edit Reminder", font=("Arial", 16, "bold"),
+                bg=COLORS["bg"], fg=COLORS["dark"]).pack(pady=10)
+        
+        tk.Label(window, text="Title:", bg=COLORS["bg"]).pack(anchor=tk.W, padx=20)
+        title_entry = tk.Entry(window, font=("Arial", 11), width=40)
+        title_entry.pack(padx=20, pady=(0, 10))
+        title_entry.insert(0, reminder[1])
+        
+        tk.Label(window, text="Message:", bg=COLORS["bg"]).pack(anchor=tk.W, padx=20)
+        message_entry = tk.Entry(window, font=("Arial", 11), width=40)
+        message_entry.pack(padx=20, pady=(0, 10))
+        message_entry.insert(0, reminder[2] or "")
+        
+        tk.Label(window, text="Due Time (YYYY-MM-DD HH:MM):", bg=COLORS["bg"]).pack(anchor=tk.W, padx=20)
+        due_entry = tk.Entry(window, font=("Arial", 11), width=40)
+        due_entry.pack(padx=20, pady=(0, 10))
+        due_entry.insert(0, reminder[3])
+        
+        tk.Label(window, text="Recurrence:", bg=COLORS["bg"]).pack(anchor=tk.W, padx=20)
+        recur_var = tk.StringVar(value=reminder[4] or "None")
+        recur_menu = ttk.Combobox(window, textvariable=recur_var, width=37,
+                                values=["None", "Daily", "Weekly", "Monthly"])
+        recur_menu.pack(padx=20, pady=(0, 10))
+        
+        status_frame = tk.Frame(window, bg=COLORS["bg"])
+        status_frame.pack(padx=20, pady=(0, 10), fill=tk.X)
+        tk.Label(status_frame, text="Status:", bg=COLORS["bg"]).pack(side=tk.LEFT)
+        status_var = tk.BooleanVar(value=bool(reminder[5]))
+        ttk.Checkbutton(status_frame, text="Active", variable=status_var).pack(side=tk.LEFT, padx=10)
+        
+        def submit():
+            title = title_entry.get().strip()
+            message = message_entry.get().strip()
+            due_time = due_entry.get().strip()
+            recurrence = recur_var.get() if recur_var.get() != "None" else None
+            
+            if not title or not due_time:
+                messagebox.showerror("Error", "Title and Due Time are required!")
+                return
+            
+            try:
+                datetime.strptime(due_time, "%Y-%m-%d %H:%M")
+            except ValueError:
+                messagebox.showerror("Error", "Invalid date format! Use YYYY-MM-DD HH:MM")
+                return
+            
+            update_reminder(reminder_id, title, message, due_time, recurrence)
+            if status_var.get() != bool(reminder[5]):
+                toggle_reminder(reminder_id, status_var.get())
+            
+            self.load_reminders()
+            window.destroy()
+            messagebox.showinfo("Success", "Reminder updated successfully!")
+        
+        tk.Button(window, text="Update Reminder", command=submit,
+                bg=COLORS["success"], fg="white", font=("Arial", 10, "bold"),
+                padx=20, pady=5).pack(pady=10)
+    
     def _get_last_inserted_id(self):
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
@@ -395,9 +567,6 @@ class ReminderApp:
         result = c.fetchone()
         conn.close()
         return result[0] if result else None
-
-    def edit_reminder(self, event):
-        self.edit_selected()
 
     def edit_selected(self):
         selection = self.tree.selection()
@@ -498,7 +667,22 @@ class ReminderApp:
             messagebox.showwarning("Warning", "Please select a reminder to toggle!")
             return
         
+        # Get the number of selected items
         items = self.tree.selection()
+        
+        # Ask for confirmation
+        if len(items) == 1:
+            item_data = self.tree.item(items[0])
+            current_status = item_data['values'][5] == "Active"
+            new_status = "inactive" if current_status else "active"
+            confirm_message = f"Are you sure you want to set this reminder to {new_status}?"
+        else:
+            confirm_message = f"Are you sure you want to toggle the status of {len(items)} reminders?"
+        
+        if not messagebox.askyesno("Confirm Status Change", confirm_message):
+            return
+        
+        # Proceed with the status change if confirmed
         for item in items:
             item_data = self.tree.item(item)
             reminder_id = item_data['values'][0]
@@ -507,6 +691,7 @@ class ReminderApp:
             toggle_reminder(reminder_id, not current_status)
         
         self.load_reminders()
+    
         if len(items) == 1:
             status = "inactive" if current_status else "active"
             messagebox.showinfo("Success", f"Reminder set to {status} successfully!")
@@ -548,6 +733,19 @@ class ReminderApp:
         
         column = self.tree.identify('column', event.x, event.y)
         
+        # Check if this is a double click (time between clicks < 300ms)
+        current_time = datetime.now().timestamp()
+        is_double_click = False
+        
+        if hasattr(self, 'last_click_time') and hasattr(self, 'last_click_item'):
+            time_diff = (current_time - self.last_click_time) * 1000  # Convert to ms
+            if time_diff < 300 and item == self.last_click_item:
+                is_double_click = True
+        
+        # Store click info for next time
+        self.last_click_time = current_time
+        self.last_click_item = item
+        
         if column == "#6":  # Status column
             self.tree.selection_set(item)
             self.changestatus_selected()
@@ -565,7 +763,22 @@ class ReminderApp:
                 update_reminder(reminder_id, reminder[1], reminder[2], reminder[3], next_recurrence)
                 self.load_reminders()
             return "break"
-
+        
+        elif column == "#2":  # Title column
+            if is_double_click:
+                # Double click on title - show view-only details
+                reminder_id = self.tree.item(item)['values'][0]
+                self.show_reminder_details(reminder_id)
+                return "break"
+            else:
+                # Single click on title - just select the item
+                self.tree.selection_set(item)
+        
+        elif is_double_click and column not in ["#2", "#5", "#6"]:
+            # Double click on other columns - edit reminder
+            self.edit_selected()
+            return "break"
+                
     def on_tree_hover(self, event):
         item = self.tree.identify('item', event.x, event.y)
         if not item:
@@ -856,6 +1069,9 @@ class ReminderApp:
                 messagebox.showinfo("Settings", f"Custom sound set:\n{path}")
 
     def clear_sound(self, label_widget=None):
+        if not messagebox.askyesno("Confirm", "Are you sure you want to clear the custom sound and use the default system sound?"):
+            return
+        
         clear_setting("sound_file")
         if label_widget:
             label_widget.config(text="Current: Default system sound")
@@ -963,16 +1179,17 @@ class ReminderApp:
                 bg=COLORS["bg"], fg=COLORS["dark"]).pack(anchor=tk.W, pady=(0, 10))
         
         shortcuts = [
-            ("Ctrl+N", "Add new reminder"),
-            ("Ctrl+E", "Edit selected reminder"),
-            ("Delete", "Delete selected reminder"),
-            ("Space", "Toggle status of selected reminder"),
-            ("Ctrl+A", "Enable all reminders"),
-            ("Ctrl+D", "Disable all reminders"),
-            ("F5", "Reload reminders list"),
-            ("F1", "Show this help dialog"),
-            ("Escape", "Clear current selection")
-        ]
+                        ("Ctrl+N", "Add new reminder"),
+                        ("Ctrl+E", "Edit selected reminder"),
+                        ("F2", "View selected reminder details"),
+                        ("Delete", "Delete selected reminder"),
+                        ("Space", "Toggle status of selected reminder"),
+                        ("Ctrl+A", "Enable all reminders"),
+                        ("Ctrl+D", "Disable all reminders"),
+                        ("F5", "Reload reminders list"),
+                        ("F1", "Show this help dialog"),
+                        ("Escape", "Clear current selection")
+                    ]
         
         for key, desc in shortcuts:
             shortcut_frame = tk.Frame(content_frame, bg=COLORS["bg"])
@@ -987,11 +1204,12 @@ class ReminderApp:
                 bg=COLORS["bg"], fg=COLORS["dark"]).pack(anchor=tk.W, pady=(15, 10))
         
         mouse_actions = [
-            ("Double-click reminder", "Edit reminder"),
-            ("Click Status column", "Toggle reminder active/inactive"),
-            ("Click Recurrence column", "Cycle through recurrence options"),
-            ("Right-click reminder", "Show context menu")
-        ]
+                        ("Double-click title", "View reminder details"),
+                        ("Double-click other columns", "Edit reminder"),
+                        ("Click Status column", "Toggle reminder active/inactive"),
+                        ("Click Recurrence column", "Cycle through recurrence options"),
+                        ("Right-click reminder", "Show context menu")
+                        ]
         
         for action, desc in mouse_actions:
             action_frame = tk.Frame(content_frame, bg=COLORS["bg"])
