@@ -232,11 +232,9 @@ class CalendarView(tk.Toplevel):
             command=self._next_month
         ).pack(side="right")
 
-        # 修改网格布局配置
         grid = tk.Frame(outer, bg=self.theme["BG_PRIMARY"])
         grid.pack(pady=(8, 8))
         
-        # 确保所有列宽度相等
         for i in range(7):
             grid.grid_columnconfigure(i, weight=1, minsize=120)
 
@@ -249,10 +247,10 @@ class CalendarView(tk.Toplevel):
         self.cells_frame = tk.Frame(grid, bg=self.theme["BG_PRIMARY"])
         self.cells_frame.grid(row=1, column=0, columnspan=7)
 
-        # 确保单元格行高一致
-        for i in range(6):  # 日历最多6行
+
+        for i in range(6): 
             self.cells_frame.grid_rowconfigure(i, minsize=70)
-        for i in range(7):  # 7列
+        for i in range(7):  
             self.cells_frame.grid_columnconfigure(i, minsize=120)
 
         # task list area
@@ -277,10 +275,6 @@ class CalendarView(tk.Toplevel):
             for c, d in enumerate(week):
                 frame = tk.Frame(self.cells_frame, bg=self.theme["BG_SECONDARY"], bd=1, relief="solid")
                 frame.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
-                
-                # 移除这两行，让单元格跟随grid配置
-                # frame.grid_propagate(False)
-                # frame.config(width=120, height=70)
 
                 if d == 0:
                     continue
@@ -343,11 +337,9 @@ class TaskListWindow(tk.Toplevel):
         self.configure(bg=theme["BG_PRIMARY"])
         self.geometry("800x500")
         
-        # 主框架
         main_frame = tk.Frame(self, bg=theme["BG_PRIMARY"], padx=20, pady=20)
         main_frame.pack(fill="both", expand=True)
         
-        # 表格
         table_card = tk.Frame(main_frame, bg=theme["BG_SECONDARY"],
                             highlightbackground=theme["BORDER_COLOR"], highlightthickness=1)
         table_card.pack(fill="both", expand=True)
@@ -361,7 +353,6 @@ class TaskListWindow(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
         self.tree.pack(side="left", fill="both", expand=True, padx=(1, 0), pady=(1, 1))
 
-        # 设置列宽
         self.tree.column("Status", width=90, anchor="center")
         self.tree.column("Subject", width=140)
         self.tree.column("Title", width=220)
@@ -373,13 +364,11 @@ class TaskListWindow(tk.Toplevel):
         for col in columns:
             self.tree.heading(col, text=col)
 
-        # 样式设置
         self.tree.tag_configure('oddrow', background=theme["BG_SECONDARY"])
         self.tree.tag_configure('evenrow', background=theme["STRIPE_BG"])
         self.tree.tag_configure('done', foreground=theme["TEXT_SECONDARY"])
         self.tree.tag_configure('overdue', foreground=theme["ACCENT_RED"])
 
-        # 填充数据
         filtered_tasks = [t for t in tasks if t.get("status") == status]
         for i, task in enumerate(filtered_tasks):
             tag = 'evenrow' if i % 2 == 0 else 'oddrow'
