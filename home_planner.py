@@ -375,7 +375,7 @@ class TaskListWindow(tk.Toplevel):
 
         # 样式设置
         self.tree.tag_configure('oddrow', background=theme["BG_SECONDARY"])
-        self.tree.tag_configure('evenrow', background="#1A202A")
+        self.tree.tag_configure('evenrow', background=theme["STRIPE_BG"])
         self.tree.tag_configure('done', foreground=theme["TEXT_SECONDARY"])
         self.tree.tag_configure('overdue', foreground=theme["ACCENT_RED"])
 
@@ -398,13 +398,13 @@ class HomeworkPlanner:
         self.root.geometry("1000x720")
         self.root.minsize(850, 600)
 
-        # --- Theme ---
-        self.theme = {
+        # --- Themes ---
+        dark_theme = {
             "BG_PRIMARY": "#0D1117",
             "BG_SECONDARY": "#161B22",
             "BORDER_COLOR": "#30363D",
             "TEXT_PRIMARY": "#C9D1D9",
-            "TEXT_SECONDARY": "#8B949E",
+            "TEXT_SECONDARY": "#9E8B96",
             "ACCENT_BLUE": "#388BFD",
             "ACCENT_BLUE_HOVER": "#58A6FF",
             "ACCENT_RED": "#DA3633",
@@ -415,7 +415,34 @@ class HomeworkPlanner:
             "ACCENT_AMBER_HOVER": "#E7B138",
             "ACCENT_GREY": "#21262D",
             "ACCENT_GREY_HOVER": "#30363D",
+            "STRIPE_BG": "#1A202A",
         }
+
+        light_theme = {
+            "BG_PRIMARY": "#FFFFFF",
+            "BG_SECONDARY": "#F6F8FA",
+            "BORDER_COLOR": "#D7D0DE",
+            "TEXT_PRIMARY": "#000000",
+            "TEXT_SECONDARY": "#000000",
+            "ACCENT_BLUE": "#0969DA",
+            "ACCENT_BLUE_HOVER": "#218BFF",
+            "ACCENT_RED": "#CF222E",
+            "ACCENT_RED_HOVER": "#DA373C",
+            "ACCENT_GREEN": "#1A7F37",
+            "ACCENT_GREEN_HOVER": "#2DA44E",
+            "ACCENT_AMBER": "#7A5901",
+            "ACCENT_AMBER_HOVER": "#9A6E0A",
+            "ACCENT_GREY": "#D400FF",
+            "ACCENT_GREY_HOVER": "#FF0095",
+            "STRIPE_BG": "#FFFFFF",
+        }
+
+        # Select theme based on time of day
+        hour = datetime.now().hour
+        if 6 <= hour < 18:
+            self.theme = light_theme
+        else:
+            self.theme = dark_theme
 
         self.FONT_LABEL = ("Segoe UI", 10)
         self.FONT_INPUT = ("Segoe UI", 10)
@@ -657,7 +684,7 @@ class HomeworkPlanner:
 
         # row styles
         self.tree.tag_configure('oddrow', background=self.theme["BG_SECONDARY"])
-        self.tree.tag_configure('evenrow', background="#1A202A")
+        self.tree.tag_configure('evenrow', background=self.theme["STRIPE_BG"])
         self.tree.tag_configure('done', foreground=self.theme["TEXT_SECONDARY"])
         self.tree.tag_configure('overdue', foreground=self.theme["ACCENT_RED"])
 
@@ -935,4 +962,3 @@ def main(parent=None):
 
 if __name__ == "__main__":
     main()
-
